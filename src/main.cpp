@@ -1,5 +1,7 @@
 #include <iostream>
 #include "../lib/models.h"  // TODO: impossible to imagine this being correct
+#include <GLFW/glfw3.h>
+
 using namespace std;
 
 int main() {

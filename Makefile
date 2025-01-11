@@ -1,9 +1,10 @@
 C++ = llvm-g++
 CFLAGS =
-BIN_DIR = bin/
+
+all: bin/ src/ build
 
 init:
-	mkdir -p ${BIN_DIR}
+	mkdir -p bin/
 
-build: bin/ hello.cpp
-	${C++} ${CFLAGS} hello.cpp -o bin/hello
+build: bin/ src/
+	${C++} ${CFLAGS} src/*.cpp lib/*.cpp -o bin/hello

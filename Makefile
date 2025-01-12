@@ -10,4 +10,4 @@ init:
 # has a space / option in it. pkg-config isn't doing what I want here,
 # BUT IT WORKS
 build: bin/ src/
-	${C++} ${CFLAGS} $(pkg-config --cflags glfw3) -o bin/hello src/*.cpp lib/*.{cpp,h} $(pkg-config --libs glfw3)
+	${C++} ${CFLAGS} `pkg-config --cflags glfw3` -o bin/hello src/*.cpp lib/*.cpp `pkg-config --libs glfw3`

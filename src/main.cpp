@@ -1,7 +1,6 @@
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
-
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -108,8 +107,8 @@ int main() {
 
   // Start using window
   glfwMakeContextCurrent(window);
-  // gladLoadGL(glfwGetProcAddress);
-  gladLoadGL();
+  //gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+  //gladLoadGL();
 
   // This is vsync. Default is 0, which means you just swap as fast as you render
   // TODO: what unit is this?

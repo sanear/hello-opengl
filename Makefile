@@ -1,7 +1,7 @@
 C++ = llvm-g++
-CFLAGS =
+CFLAGS = -I/usr/local/include/glad
 
-all: bin/ src/ build
+all: bin/ src/ build rename
 
 init:
 	mkdir -p bin/
@@ -10,4 +10,11 @@ init:
 # has a space / option in it. pkg-config isn't doing what I want here,
 # BUT IT WORKS
 build: bin/ src/
-	${C++} ${CFLAGS} `pkg-config --cflags glfw3` -o bin/hello src/*.cpp lib/*.cpp `pkg-config --libs glfw3`
+	${C++} ${CFLAGS} `pkg-config --cflags glfw3` -o bin/hello src/*.cpp src/*.c lib/*.cpp `pkg-config --libs glfw3`
+
+# TODO: this seems like it should be unnecessary, but maybe OSX defaults to /usr/lib?
+# I think I could relatively easily reconfigure glfw to install there, but this seems
+# easier for now...
+# Eventually we're gonna use CMake anyway
+rename: build
+    install_name_tool -add_rpath /usr/local/lib bin/hello

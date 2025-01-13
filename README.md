@@ -31,11 +31,11 @@ This project is brimming with features
 ### TODOS
 
 #### OpenGL
+- [ ] Move (translate) the spinning triangle with WASD
 - [ ] Learn why there's those weird blocks of string-wrapped code for vertex & fragment shaders (also what those really are)
     - [ ] Consider removing the shading entirely for simplicity
 - [ ] Convert the triangle to a triforce
     - [ ] Stretch - make it a configurable Sierpinsky triangle
-- [ ] Move (translate) the spinning triangle with WASD
 - [ ] Abstract some of the OpenGL boilerplate into a library
 - [ ] Implement a button? Is that even an OpenGL thing? Or, I guess, learn what people make dummy user interfaces in
 - [ ] Render a bitmap... if OpenGL is for that ([It appears so](https://users.polytech.unice.fr/~buffa/cours/synthese_image/DOCS/redbookSliced1.2ps+pdf/chapterVIII.pdf)).

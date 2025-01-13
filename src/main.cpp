@@ -20,10 +20,22 @@ struct God {
   bool doPause;
   float pausedAtTime;
   float elapsedPauseTime;
+  float nextTransX;
+  float nextTransY;
+  float nextTransZ;
+
+  void resetCmds() {
+    nextTransX = 0;
+    nextTransY = 0;
+    nextTransZ = 0;
+  }
 };
 
 static God god = {
   false,
+  0.f,
+  0.f,
+  0.f,
   0.f,
   0.f
 };
@@ -79,17 +91,33 @@ void lilGuyPoc() {
 }
 
 // glfw callbacks
+// TODO: I know essentially for a fact that using god objects for flow control is wrong
+// I just need to figure out what the "appropriate" structure here to separate concerns is
+// Ideally, the control flow of the game would be (almost) entirely decoupled from the graphics
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    cout << "Got ESC key from user; closing" << endl;
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-    if (!god.doPause) {
-      god.pausedAtTime = glfwGetTime();
-    } else {
-      god.elapsedPauseTime += glfwGetTime() - god.pausedAtTime;
+  if (action == GLFW_PRESS) {
+    switch (key) {
+      case GLFW_KEY_ESCAPE:
+        cout << "Got ESC key from user; closing" << endl;
+        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        break;
+      case GLFW_KEY_SPACE:
+        if (!god.doPause) {
+          god.pausedAtTime = glfwGetTime();
+        } else {
+          god.elapsedPauseTime += glfwGetTime() - god.pausedAtTime;
+        }
+        god.doPause = !god.doPause;
+        break;
+      case GLFW_KEY_W:
+        god.nextTransY = -0.4f;
+      case GLFW_KEY_A:
+        god.nextTransX = 0.4f;
+      case GLFW_KEY_S:
+        god.nextTransY = 0.4f;
+      case GLFW_KEY_D:
+        god.nextTransX = -0.4f;
     }
-    god.doPause = !god.doPause;
   }
 }
 
@@ -174,6 +202,7 @@ int main() {
   const GLint vcol_location = glGetAttribLocation(program, "vCol");
 
   // I hate wrapper types... why can't I use a regular int...
+  // TODO: I have a feeling that these are forcing the triangle's position to stay constant.
   GLuint vertex_array;
   glGenVertexArrays(1, &vertex_array);
   glBindVertexArray(vertex_array);
@@ -202,7 +231,11 @@ int main() {
     if (!god.doPause) {
       mat4x4_rotate_Z(m, m, (float) glfwGetTime() - god.elapsedPauseTime);
       mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+      // TODO: this is not making a lasting change to the location of the triangle!
+      // It updates the position for a single refresh, then returns to the original position
+      mat4x4_translate_in_place(m, god.nextTransX, god.nextTransY, god.nextTransZ);
       mat4x4_mul(mvp, p, m);
+      god.resetCmds();
     }
 
     glUseProgram(program);

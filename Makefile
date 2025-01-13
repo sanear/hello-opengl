@@ -17,4 +17,4 @@ build: bin/ src/
 # easier for now...
 # Eventually we're gonna use CMake anyway
 rename: build
-    install_name_tool -add_rpath /usr/local/lib bin/hello
+	install_name_tool -add_rpath /usr/local/lib bin/hello

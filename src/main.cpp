@@ -2,7 +2,6 @@
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
-
 #include <iostream>
 
 // Stolen from glfw examples
@@ -85,7 +84,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
     cout << "Got ESC key from user; closing" << endl;
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-    cout << "Got SPACE key from user; (un)pausing" << endl;
     if (!god.doPause) {
       god.pausedAtTime = glfwGetTime();
     } else {
@@ -223,5 +221,6 @@ int main() {
   // "finally"
   glfwDestroyWindow(window);
   glfwTerminate();
+
   exit(EXIT_SUCCESS);
 }

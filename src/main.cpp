@@ -17,6 +17,18 @@
 
 using namespace std;
 
+struct God {
+  bool doPause;
+  float pausedAtTime;
+  float elapsedPauseTime;
+};
+
+static God god = {
+  false,
+  0.f,
+  0.f
+};
+
 typedef struct Vertex
 {
     vec2 pos; // 2-space position
@@ -67,36 +79,48 @@ void lilGuyPoc() {
   cout << guy->info() << endl;
 }
 
-
 // glfw callbacks
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    cout << "Got ESC key from user; closing" << endl;
     glfwSetWindowShouldClose(window, GLFW_TRUE);
+  } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+    cout << "Got SPACE key from user; (un)pausing" << endl;
+    if (!god.doPause) {
+      god.pausedAtTime = glfwGetTime();
+    } else {
+      god.elapsedPauseTime += glfwGetTime() - god.pausedAtTime;
+    }
+    god.doPause = !god.doPause;
   }
 }
 
 void error_callback(int error, const char* description) {
-  fprintf(stderr, "Error: %s\n", description);
-  // error unused?
+  fprintf(stderr, "Error %i: %s\n", error, description);
 }
 
 int main() {
-
   // OO hello world
   lilGuyPoc();
 
   // Initialize glfw
+  cout << "Initializing glfw..." << endl;
   glfwSetErrorCallback(error_callback);
+  // glfwInitHint(GLFW_COCOA_MENUBAR, GLFW_FALSE); // TODO: desirable in some ways, but disables input and window selection
   if (!glfwInit()) {
     cout << "glfw could not initialize!" << endl;
-    return 1;
+    exit(EXIT_FAILURE);
   }
 
   // Create a glfw window
+  cout << "Creating glfw window hints..." << endl;
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  GLFWwindow* window = glfwCreateWindow(640, 480, "TRIANGLE", NULL, NULL);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+  cout << "Creating glfw window..." << endl;
+  GLFWwindow* window = glfwCreateWindow(1280, 960, "TRIANGLE", NULL, NULL);
   if (!window) {
     cout << "Failed to create glfw window!" << endl;
     glfwTerminate();
@@ -106,12 +130,15 @@ int main() {
   glfwSetKeyCallback(window, key_callback);
 
   // Start using window
+  cout << "Making context current (window)..." << endl;
   glfwMakeContextCurrent(window);
-  //gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
-  //gladLoadGL();
+  //
+  gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+  // gladLoadGL();
 
   // This is vsync. Default is 0, which means you just swap as fast as you render
   // TODO: what unit is this?
+  cout << "Setting swap interval..." << endl;
   glfwSwapInterval(1);
 
   // TODO: OpenGL error checks have been omitted for brevity
@@ -133,13 +160,16 @@ int main() {
   glCompileShader(fragment_shader);
 
   // Link the shaders up to a program object
+  cout << "Creating program..." << endl;
   const GLuint program = glCreateProgram();
   glAttachShader(program, vertex_shader);
   glAttachShader(program, fragment_shader);
+
+  cout << "Linking program to GL..." << endl;
   glLinkProgram(program);
 
   // TODO: parse
-  // mvp?
+  // mvp = model-view-projection, a matrix multiplication for camera/3d world stuff
   // vpos = vertex position?
   // col might not be color...
   const GLint mvp_location = glGetUniformLocation(program, "MVP");
@@ -157,9 +187,8 @@ int main() {
   glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                         sizeof(Vertex), (void*) offsetof(Vertex, col));
 
-
-
   // Control loop
+  cout << "Starting main loop..." << endl;
   while (!glfwWindowShouldClose(window)) {
     // do stuff
     int width, height;
@@ -173,18 +202,16 @@ int main() {
     // The Linear Algebra Part
     mat4x4 m, p, mvp;
     mat4x4_identity(m);
-    mat4x4_rotate_Z(m, m, (float) glfwGetTime());
-    mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-    mat4x4_mul(mvp, p, m);
+    if (!god.doPause) {
+      mat4x4_rotate_Z(m, m, (float) glfwGetTime() - god.elapsedPauseTime);
+      mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+      mat4x4_mul(mvp, p, m);
+    }
 
-    // prefixes have switched from glfw to just gl...
     glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) &mvp);
     glBindVertexArray(vertex_array);
     glDrawArrays(GL_TRIANGLES, 0, 3);
-
-    // TODO: They told me about this but we're not using it
-    // double time = glfwGetTime();
 
     // Once back buffer is rendered, bring to front (this is how we advance frames)
     glfwSwapBuffers(window);

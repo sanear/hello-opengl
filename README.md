@@ -1,5 +1,5 @@
-## Hello, C(++) 
-Prove that  I can compile some C++ hopefully
+## Hello, OpenGL in C++
+Proof that I can render things at all
 
 ### Project structure
 

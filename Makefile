@@ -1,5 +1,4 @@
 C++ = llvm-g++
-CFLAGS = -I/usr/local/include/glad
 
 all: bin/ src/ build rename
 

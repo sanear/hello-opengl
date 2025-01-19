@@ -15,19 +15,20 @@
 
 using namespace std;
 
-void God::resetCmds() {
-    nextTransX = 0;
-    nextTransY = 0;
-    nextTransZ = 0;
-};
-
-static God god = {
-  false,
+static TriangleData triangle = {
+  false, // true on frame 1, won't draw until unpaused
   0.f,
   0.f,
   0.f,
   0.f,
   0.f
+};
+
+static InputState inputState = {
+  false,
+  false,
+  false,
+  false
 };
 
 
@@ -38,7 +39,16 @@ static const Vertex vertices[3] =
     { {   0.f,  0.6f }, { 0.f, 0.f, 1.f } }
 };
 
-// TODO: this is arcane
+
+
+// Text of GLSL code for simple vertex and fragment shaders
+// Evidently, this will sometimes be the time when we convert
+// application x,y,z to "normalized device coordinates", which
+// are (understandably) scaled to [-1.0, 1.0] and (bafflingly)
+// centered at (0.5,0.5,0.5)
+// ... I am guessing that we do that transformation in the
+// shader in order to push as much vertex-level computation as
+// possibl to the GPU
 static const char* vertex_shader_text =
 "#version 330\n"
 "uniform mat4 MVP;\n"
@@ -61,38 +71,70 @@ static const char* fragment_shader_text =
 "}\n";
 
 // glfw callbacks
-// TODO: I know essentially for a fact that using god objects for flow control is wrong
-// I just need to figure out what the "appropriate" structure here to separate concerns is
-// Ideally, the control flow of the game would be (almost) entirely decoupled from the graphics
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  if (action == GLFW_PRESS) {
-    switch (key) {
-      case GLFW_KEY_ESCAPE:
-        cout << "Got ESC key from user; closing" << endl;
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-        break;
-      case GLFW_KEY_SPACE:
-        if (!god.doPause) {
-          god.pausedAtTime = glfwGetTime();
-        } else {
-          god.elapsedPauseTime += glfwGetTime() - god.pausedAtTime;
-        }
-        god.doPause = !god.doPause;
-        break;
-      case GLFW_KEY_W:
-        god.nextTransY = -0.4f;
-      case GLFW_KEY_A:
-        god.nextTransX = 0.4f;
-      case GLFW_KEY_S:
-        god.nextTransY = 0.4f;
-      case GLFW_KEY_D:
-        god.nextTransX = -0.4f;
+  switch (key) {
+  case GLFW_KEY_ESCAPE:
+    if (action == GLFW_PRESS) {
+      cout << "Got ESC key from user; closing" << endl;
+      glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
+    break;
+  case GLFW_KEY_SPACE:
+    if (action == GLFW_PRESS) {
+      if (!triangle.doPause) {
+        triangle.pausedAtTime = glfwGetTime();
+      } else {
+        triangle.elapsedPauseTime += glfwGetTime() - triangle.pausedAtTime;
+      }
+      triangle.doPause = !triangle.doPause;
+    }
+    break;
+  case GLFW_KEY_W:
+    if (action == GLFW_PRESS) { // TODO: Repeat is a bad experience
+      inputState.wHeld = true;
+    } else if (action == GLFW_RELEASE) {
+      inputState.wHeld = false;
+    }
+    break;
+  case GLFW_KEY_A:
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+      inputState.aHeld = true;
+    } else if (action == GLFW_RELEASE) {
+      inputState.aHeld = false;
+    }
+    break;
+  case GLFW_KEY_S:
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+      inputState.sHeld = true;
+    }
+     else if (action == GLFW_RELEASE) {
+      inputState.sHeld = false;
+    }
+    break;
+  case GLFW_KEY_D:
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+      inputState.dHeld = true;
+    } else if (action == GLFW_RELEASE) {
+      inputState.dHeld = false;
+    }
+    break;
   }
 }
 
 void error_callback(int error, const char* description) {
   fprintf(stderr, "Error %i: %s\n", error, description);
+}
+
+void logShaderError(GLuint shader, string type) {
+  int success;
+  char infoLog[512];
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if(!success)
+  {
+    glGetShaderInfoLog(shader, 512, NULL, infoLog);
+    cout << "ERROR::SHADER::" << type << "::COMPILATION_FAILED\n" <<
+      infoLog << endl;
+  }
 }
 
 int do_triangle() {
@@ -136,20 +178,20 @@ int do_triangle() {
 
   // TODO: OpenGL error checks have been omitted for brevity
 
-  // TODO: parse this copypasta
   GLuint vertex_buffer;
   glGenBuffers(1, &vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-  // Fairly certain most of this is about shadow and stuff that I probably don't do right now
   const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
   glCompileShader(vertex_shader);
+  logShaderError(vertex_shader, "VERTEX");
 
   const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
   glCompileShader(fragment_shader);
+  logShaderError(vertex_shader, "VERTEX");
 
   // Link the shaders up to a program object
   cout << "Creating program..." << endl;
@@ -183,6 +225,22 @@ int do_triangle() {
   // Control loop
   cout << "Starting main loop..." << endl;
   while (!glfwWindowShouldClose(window)) {
+    // TODO: obviously this belongs in an updateState method that lives with the position data
+    float keyDelta = 0.01f;
+    // Process input state changes
+    if (inputState.wHeld) {
+      triangle.offsetY += keyDelta;
+    }
+    if (inputState.aHeld) {
+      triangle.offsetX -= keyDelta;
+    }
+    if (inputState.sHeld) {
+      triangle.offsetY -= keyDelta;
+    }
+    if (inputState.dHeld) {
+      triangle.offsetX += keyDelta;
+    }
+
     // do stuff
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -195,14 +253,11 @@ int do_triangle() {
     // The Linear Algebra Part
     mat4x4 m, p, mvp;
     mat4x4_identity(m);
-    if (!god.doPause) {
-      mat4x4_rotate_Z(m, m, (float) glfwGetTime() - god.elapsedPauseTime);
+    if (!triangle.doPause) {
+      mat4x4_translate_in_place(m, triangle.offsetX, triangle.offsetY, 0.f);
+      mat4x4_rotate_Z(m, m, (float) glfwGetTime() - triangle.elapsedPauseTime);
       mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-      // TODO: this is not making a lasting change to the location of the triangle!
-      // It updates the position for a single refresh, then returns to the original position
-      mat4x4_translate_in_place(m, god.nextTransX, god.nextTransY, god.nextTransZ);
       mat4x4_mul(mvp, p, m);
-      god.resetCmds();
     }
 
     glUseProgram(program);

@@ -5,15 +5,25 @@
 
 #include "../lib/linmath.h"
 
-struct God {
+using namespace std;
+
+// TODO: I know essentially for a fact that using god objects for flow control is wrong
+// I just need to figure out what the "appropriate" structure here to separate concerns is
+// Ideally, the control flow of the game would be (almost) entirely decoupled from the graphics
+struct TriangleData {
   bool doPause;
   float pausedAtTime;
   float elapsedPauseTime;
-  float nextTransX;
-  float nextTransY;
-  float nextTransZ;
+  float offsetX;
+  float offsetY;
+  float offsetZ;
+};
 
-  void resetCmds();
+struct InputState {
+  bool wHeld;
+  bool aHeld;
+  bool sHeld;
+  bool dHeld;
 };
 
 typedef struct Vertex

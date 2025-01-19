@@ -39,8 +39,6 @@ static const Vertex vertices[3] =
     { {   0.f,  0.6f }, { 0.f, 0.f, 1.f } }
 };
 
-
-
 // Text of GLSL code for simple vertex and fragment shaders
 // Evidently, this will sometimes be the time when we convert
 // application x,y,z to "normalized device coordinates", which

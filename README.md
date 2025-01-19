@@ -38,7 +38,7 @@ This project is brimming with features
 - [ ] Abstract some of the OpenGL boilerplate into a library
 - [ ] Implement a button? Is that even an OpenGL thing? Or, I guess, learn what people make dummy user interfaces in
 - [ ] Render a bitmap... if OpenGL is for that ([It appears so](https://users.polytech.unice.fr/~buffa/cours/synthese_image/DOCS/redbookSliced1.2ps+pdf/chapterVIII.pdf)).
-- [ ] ~Find a way to get the `glad.c` file out of my source?~
+- [ ] ~~Find a way to get the `glad.c` file out of my source?~~
 - [ ] Learn linear algebra 😭
 
 #### Build & infra

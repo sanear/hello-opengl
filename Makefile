@@ -9,7 +9,7 @@ init:
 # has a space / option in it. pkg-config isn't doing what I want here,
 # BUT IT WORKS
 build: bin/ src/
-	${C++} ${CFLAGS} `pkg-config --cflags glfw3` -o bin/hello src/*.cpp src/*.c lib/*.cpp `pkg-config --libs glfw3`
+	${C++} ${CFLAGS} `pkg-config --cflags glfw3` -o bin/hello src/*.cpp lib/*.cpp lib/*.c `pkg-config --libs glfw3`
 
 # TODO: this seems like it should be unnecessary, but maybe OSX defaults to /usr/lib?
 # I think I could relatively easily reconfigure glfw to install there, but this seems

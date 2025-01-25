@@ -1,2 +1,3 @@
 bin/*
 build/
+.dir-locals.el

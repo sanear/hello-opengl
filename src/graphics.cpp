@@ -78,17 +78,17 @@ void setupVertexBuffer(GLuint* vertexBuffer) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(centerTriangle), centerTriangle, GL_STATIC_DRAW);
 }
 
-void setupShader(GLuint* shader, const char* shaderText, string kind) {
+void setupShader(const GLuint* shader, const char* shaderText, string kind) {
   glShaderSource(*shader, 1, &shaderText, NULL);
   glCompileShader(*shader);
   logShaderError(*shader, kind);
 }
 
-void setupVertexShader(GLuint* vShader, const char* shader_text) {
+void setupVertexShader(const GLuint* vShader, const char* shader_text) {
   setupShader(vShader, shader_text, "VERTEX");
 }
 
-void setupFragmentShader(GLuint* fShader, const char* shader_text) {
+void setupFragmentShader(const GLuint* fShader, const char* shader_text) {
   setupShader(fShader, shader_text, "FRAGMENT");
 }
 
@@ -166,9 +166,9 @@ void doEverything() {
   setupVertexBuffer(&vertex_buffer);
 
   cout << "Initializing shaders..." << endl;
-  GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   setupVertexShader(&vertex_shader, vertex_shader_text);
+  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   setupFragmentShader(&fragment_shader, fragment_shader_text);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
 

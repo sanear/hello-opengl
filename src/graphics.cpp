@@ -71,10 +71,9 @@ void logShaderError(GLuint shader, string type) {
   }
 }
 
-void setupVertexBuffer(GLuint* vertexBuffer) {
-  GLuint vertex_buffer;
-  glGenBuffers(1, &vertex_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+void setupVertexBuffer(GLuint* vertex_buffer) {
+  glGenBuffers(1, vertex_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, *vertex_buffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(centerTriangle), centerTriangle, GL_STATIC_DRAW);
 }
 

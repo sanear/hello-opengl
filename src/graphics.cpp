@@ -9,94 +9,33 @@
 
 using namespace std;
 
+void error_callback(int error, const char* description);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void logShaderError(GLuint shader);
+void logShaderProgramError(GLuint shaderProgram);
+
 // Text of GLSL code for simple vertex and fragment shaders
-// Evidently, this will sometimes be the time when we convert
-// application x,y,z to "normalized device coordinates", which
-// are (understandably) scaled to [-1.0, 1.0] and (bafflingly)
-// centered at (0.5,0.5,0.5)
-// ... I am guessing that we do that transformation in the
-// shader in order to push as much vertex-level computation as
-// possible to the GPU
-static const char* vertex_shader_text =
-"#version 330\n"
-"uniform mat4 MVP;\n"
-"in vec3 vCol;\n"
-"in vec2 vPos;\n"
-"out vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-"    color = vCol;\n"
-"}\n";
+const char* vertex_shader_text =
+  "#version 330 core\n"
+  "layout (location = 0) in vec3 aPos;\n"
+  "void main() {\n"
+  "gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+  "}\n";
 
-static const char* fragment_shader_text =
-"#version 330\n"
-"in vec3 color;\n"
-"out vec4 fragment;\n"
-"void main()\n"
-"{\n"
-"    fragment = vec4(color, 1.0);\n"
-"}\n";
+const char* fragment_shader_text =
+  "#version 330 core\n"
+  "out vec4 FragColor;\n"
+  "void main() {\n"
+  "FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+  "}\n";
 
-static const Vertex centerTriangle[3] =
-{
-    { { -0.6f, -0.4f }, { 1.f, 0.f, 0.f } },
-    { {  0.6f, -0.4f }, { 0.f, 1.f, 0.f } },
-    { {   0.f,  0.6f }, { 0.f, 0.f, 1.f } }
+const float vertices[] = {
+  -0.5f, -0.5f, 0.0f,
+  0.5f, -0.5f, 0.0f,
+  0.0f, 0.5f, 0.0f
 };
 
-void error_callback(int error, const char* description) {
-  fprintf(stderr, "Error %i: %s\n", error, description);
-}
-
-// TODO implementation
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    cout << "Got ESC key from user; closing" << endl;
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-  }
-  // TODO wire up input and stuff
-  //handleKeys(key, action);
-}
-
-void logShaderError(GLuint shader, string type) {
-  int success;
-  char infoLog[512];
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if(!success)
-  {
-    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    cout << "ERROR::SHADER::" << type << "::COMPILATION_FAILED\n" <<
-      infoLog << endl;
-  }
-}
-
-void setupVertexBuffer(GLuint* vertexBuffer) {
-  GLuint vertex_buffer;
-  glGenBuffers(1, &vertex_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(centerTriangle), centerTriangle, GL_STATIC_DRAW);
-}
-
-void setupShader(const GLuint* shader, const char* shaderText, string kind) {
-  glShaderSource(*shader, 1, &shaderText, NULL);
-  glCompileShader(*shader);
-  logShaderError(*shader, kind);
-}
-
-void setupVertexShader(const GLuint* vShader, const char* shader_text) {
-  setupShader(vShader, shader_text, "VERTEX");
-}
-
-void setupFragmentShader(const GLuint* fShader, const char* shader_text) {
-  setupShader(fShader, shader_text, "FRAGMENT");
-}
-
-void setupProgram(const GLuint* program, const GLuint* shaders[], int shaderCount) {
-  for (int i = 0; i < shaderCount; i++) {
-    glAttachShader(*program, *shaders[i]);
-  }
-}
 
 GLFWwindow* initGlfwWindow() {
   // Set callback for errors and initialize glfw
@@ -120,93 +59,151 @@ GLFWwindow* initGlfwWindow() {
     exit(EXIT_FAILURE);
   }
 
+  // Callback for framebuffer sizing
+  glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
   // Callback for input handling
   glfwSetKeyCallback(window, key_callback);
 
   // Bind window to context
   glfwMakeContextCurrent(window);
-  gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to initialize GLAD" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 
   // vsync
   glfwSwapInterval(1);
   return window;
 }
 
-void mystifyingLinAlg(const GLuint* program, GLuint* vertex_array, GLint* mvp_location) {
-  // mvp = model*view*projection, a matrix multiplication for camera/3d world stuff
-  // vPos = vector of positions
-  // vCol = vector of colors
-  GLint mvp_loc = glGetUniformLocation(*program, "MVP");
-  mvp_location = &mvp_loc;
-  const GLint vpos_location = glGetAttribLocation(*program, "vPos");
-  const GLint vcol_location = glGetAttribLocation(*program, "vCol");
-
-  glGenVertexArrays(1, vertex_array);
-  glBindVertexArray(*vertex_array);
-  glEnableVertexAttribArray(vpos_location);
-  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-                        sizeof(Vertex), (void*) offsetof(Vertex, pos));
-  glEnableVertexAttribArray(vcol_location);
-  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                        sizeof(Vertex), (void*) offsetof(Vertex, col));
+void setupShader(GLuint* shader, const char* shaderText, GLuint shader_type) {
+  *shader = glCreateShader(shader_type);
+  glShaderSource(*shader, 1, &shaderText, NULL);
+  glCompileShader(*shader);
+  logShaderError(*shader);
 }
 
-void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float ratio) {
-  mat4x4_identity(m);
-  mat4x4_rotate_Z(m, m, (float) glfwGetTime());
-  mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-  mat4x4_mul(mvp, p, m);
+void setupVertexShader(GLuint* shader) {
+  setupShader(shader, vertex_shader_text, GL_VERTEX_SHADER);
+}
+
+// TODO: why tf didn't this work with a pointer to the now-returned value?
+void setupFragmentShader(GLuint* shader) {
+  setupShader(shader, fragment_shader_text, GL_FRAGMENT_SHADER);
+}
+
+void setupShaderProgram(GLuint* shaderProgram, const GLuint* shaders[], int shaderCount) {
+  *shaderProgram = glCreateProgram();
+  for (int i = 0; i < shaderCount; i++) {
+    cout << "Attaching shader " << *shaders[i] << " to program " << *shaderProgram << endl;
+    glAttachShader(*shaderProgram, *shaders[i]);
+    // TODO Once attached, no longer needed?
+    // glDeleteShader(*shaderProgram);
+  }
+  glLinkProgram(*shaderProgram);
+  logShaderProgramError(*shaderProgram);
 }
 
 void doEverything() {
   cout << "Initializing window..." << endl;
   GLFWwindow* window = initGlfwWindow();
   
-  GLuint vertex_buffer;
-  setupVertexBuffer(&vertex_buffer);
-
   cout << "Initializing shaders..." << endl;
-  const GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  setupVertexShader(&vertex_shader, vertex_shader_text);
-  GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  setupFragmentShader(&fragment_shader, fragment_shader_text);
+  GLuint vertex_shader;
+  setupVertexShader(&vertex_shader);
+  GLuint fragment_shader;
+  setupFragmentShader(&fragment_shader);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
 
   cout << "Creating program..." << endl;
-  const GLuint program = glCreateProgram();
-  setupProgram(&program, shaders, 2);
+  GLuint shaderProgram;
+  setupShaderProgram(&shaderProgram, shaders, 2);
+  cout << "Got program " << shaderProgram << endl;
+  // GLuint shaderProgram = glCreateProgram();
+  // for (int i=0; i < 2; i++) {
+  //   cout << "Attaching shader " << *shaders[i] << " to program " << shaderProgram << endl;
+  //   glAttachShader(shaderProgram, *shaders[i]);
+  //   glDeleteShader(*shaders[i]);
+  // }
 
-  GLuint vertex_array;
-  GLint mvp_location;
-  mystifyingLinAlg(&program, &vertex_array, &mvp_location);
+  // glLinkProgram(shaderProgram);
+  // logShaderProgramError(shaderProgram);
 
-  // Main loop!
-  // TODO: this should live separate from the graphics right?
+  cout << "Linking vertex attributes..." << endl;
+  GLuint vertex_buffer_object, vertex_array_object;
+  glGenVertexArrays(1, &vertex_array_object);
+  glGenBuffers(1, &vertex_buffer_object);
+
+  glBindVertexArray(vertex_array_object);
+
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_object);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*) 0);
+  glEnableVertexAttribArray(0);
+
+  // uncomment this call to draw in wireframe polygons.
+  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
   cout << "Starting render loop..." << endl;
-  while(!glfwWindowShouldClose(window)) {
-    // TODO: get input from input layer..?
-
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    const float ratio = width / (float) height;
-
-    glViewport(0, 0, width, height);
+  while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT);
-
-    mat4x4 m, v, mvp;  // don't need to be pointers, b/c arrays
-    rotationMatrix(m, v, mvp, ratio);
-
-    glUseProgram(program); // TODO every iteration?
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) &mvp);
-    glBindVertexArray(vertex_array);
+    glUseProgram(shaderProgram);
+    glBindVertexArray(vertex_array_object);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glfwSwapBuffers(window);
-
     glfwPollEvents();
   }
+
   cout << "Done." << endl;
+  glDeleteVertexArrays(1, &vertex_array_object);
+  glDeleteBuffers(1, &vertex_buffer_object);
+  glDeleteProgram(shaderProgram);
+
   glfwDestroyWindow(window);
   glfwTerminate();
   exit(EXIT_SUCCESS);
+}
+
+void error_callback(int error, const char* description) {
+  fprintf(stderr, "Error %i: %s\n", error, description);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    cout << "Got ESC key from user; closing" << endl;
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+  // TODO wire up input and stuff
+  //handleKeys(key, action);
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+    glViewport(0, 0, width, height);
+}
+
+void logShaderError(GLuint shader) {
+  int success;
+  char infoLog[512];
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if(!success)
+  {
+    glGetShaderInfoLog(shader, 512, NULL, infoLog);
+    cout << "ERROR::SHADER::" << shader << "::COMPILATION_FAILED\n" <<
+      infoLog << endl;
+  }
+}
+
+void logShaderProgramError(GLuint shaderProgram) {
+  GLint success;
+  char infoLog[512];
+  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+    cout << "ERROR::SHADER::" << shaderProgram << "::COMPILATION_FAILED\n" <<
+      infoLog << endl;
+  }
 }

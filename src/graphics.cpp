@@ -72,16 +72,17 @@ void setupFragmentShader(GLuint* shader) {
   setupShader(shader, fragment_shader_text);
 }
 
-void setupShaderProgram(GLuint* program, const GLuint* shaders[], int shaderCount) {
-  *program = glCreateProgram();
+void setupShaderProgram(GLuint* shaderProgram, const GLuint* shaders[], int shaderCount) {
+  *shaderProgram = glCreateProgram();
   for (int i = 0; i < shaderCount; i++) {
-    cout << "Attaching shader " << *shaders[i] << " to program " << *program << endl;
-    glAttachShader(*program, *shaders[i]);
+    cout << "Attaching shader " << *shaders[i] << " to program " << *shaderProgram << endl;
+    glAttachShader(*shaderProgram, *shaders[i]);
   }
-  logShaderProgramError(*program);
-  // for (int i = 0; i < shaderCount; i++) {
-  //   glDeleteShader(*shaders[i]);
-  // }
+  glLinkProgram(*shaderProgram);
+  logShaderProgramError(*shaderProgram);
+  for (int i = 0; i < shaderCount; i++) {
+    glDeleteShader(*shaders[i]);
+  }
 }
 
 GLFWwindow* initGlfwWindow() {

@@ -192,8 +192,7 @@ void logShaderError(GLuint shader) {
   if(!success)
   {
     glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    cout << "ERROR::SHADER::" << shader << "::COMPILATION_FAILED\n" <<
-      infoLog << endl;
+    cout << "ERROR::SHADER::" << shader << "::COMPILATION_FAILED\n" << infoLog << endl;
   }
 }
 
@@ -203,7 +202,6 @@ void logShaderProgramError(GLuint shaderProgram) {
   glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-    cout << "ERROR::SHADER::" << shaderProgram << "::COMPILATION_FAILED\n" <<
-      infoLog << endl;
+    cout << "ERROR::SHADER::" << shaderProgram << "::COMPILATION_FAILED\n" << infoLog << endl;
   }
 }

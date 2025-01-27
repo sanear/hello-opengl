@@ -102,6 +102,9 @@ void setupShaderProgram(GLuint* shaderProgram, const GLuint* shaders[], int shad
   }
   glLinkProgram(*shaderProgram);
   logShaderProgramError(*shaderProgram);
+  for (int i = 0; i < shaderCount; i++) {
+    glDeleteShader(*shaders[i]);
+  }
 }
 
 void doEverything() {

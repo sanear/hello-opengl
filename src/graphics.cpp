@@ -76,9 +76,11 @@ void setupShaderProgram(GLuint* program, const GLuint* shaders[], int shaderCoun
   *program = glCreateProgram();
   for (int i = 0; i < shaderCount; i++) {
     glAttachShader(*program, *shaders[i]);
-    glDeleteShader(*shaders[i]);
-    logShaderProgramError(*program);
   }
+  logShaderProgramError(*program);
+  // for (int i = 0; i < shaderCount; i++) {
+  //   glDeleteShader(*shaders[i]);
+  // }
 }
 
 GLFWwindow* initGlfwWindow() {
@@ -159,6 +161,7 @@ void doEverything() {
 
   GLuint vertex_array;
   GLint mvp_location;
+  cout << "Setting up vertex array object..." << endl;
   setupVertexArrayObject(&program, &vertex_array, &mvp_location);
 
   // Main loop!

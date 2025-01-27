@@ -72,7 +72,7 @@ void setupFragmentShader(GLuint* shader) {
   setupShader(shader, fragment_shader_text);
 }
 
-void setupProgram(GLuint* program, const GLuint* shaders[], int shaderCount) {
+void setupShaderProgram(GLuint* program, const GLuint* shaders[], int shaderCount) {
   *program = glCreateProgram();
   for (int i = 0; i < shaderCount; i++) {
     glAttachShader(*program, *shaders[i]);
@@ -155,7 +155,7 @@ void doEverything() {
 
   cout << "Creating program..." << endl;
   GLuint program;
-  setupProgram(&program, shaders, 2);
+  setupShaderProgram(&program, shaders, 2);
 
   GLuint vertex_array;
   GLint mvp_location;

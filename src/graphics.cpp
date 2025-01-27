@@ -99,8 +99,6 @@ void setupShaderProgram(GLuint* shaderProgram, const GLuint* shaders[], int shad
   for (int i = 0; i < shaderCount; i++) {
     cout << "Attaching shader " << *shaders[i] << " to program " << *shaderProgram << endl;
     glAttachShader(*shaderProgram, *shaders[i]);
-    // TODO Once attached, no longer needed?
-    // glDeleteShader(*shaderProgram);
   }
   glLinkProgram(*shaderProgram);
   logShaderProgramError(*shaderProgram);

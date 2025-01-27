@@ -4,13 +4,14 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-#include "input.h"
 #include "graphics.h"
+#include "logic.h"
 
 using namespace std;
 
-void error_callback(int error, const char* description);
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void error_callback(int error, const char *description);
+static void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                         int mods);
 void logShaderError(GLuint shader);
 void logShaderProgramError(GLuint shaderProgram);
 
@@ -22,60 +23,62 @@ void logShaderProgramError(GLuint shaderProgram);
 // ... I am guessing that we do that transformation in the
 // shader in order to push as much vertex-level computation as
 // possible to the GPU
-static const char* vertex_shader_text =
-"#version 330 core\n"
-"uniform mat4 MVP;\n"
-"in vec3 vCol;\n"
-"in vec2 vPos;\n"
-"out vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-"    color = vCol;\n"
-"}\n";
+static const char *vertex_shader_text =
+    "#version 330 core\n"
+    "uniform mat4 MVP;\n"
+    "in vec3 vCol;\n"
+    "in vec2 vPos;\n"
+    "out vec3 color;\n"
+    "void main()\n"
+    "{\n"
+    "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
+    "    color = vCol;\n"
+    "}\n";
 
-static const char* fragment_shader_text =
-"#version 330 core\n"
-"in vec3 color;\n"
-"out vec4 fragment;\n"
-"void main()\n"
-"{\n"
-"    fragment = vec4(color, 1.0);\n"
-"}\n";
+static const char *fragment_shader_text = "#version 330 core\n"
+                                          "in vec3 color;\n"
+                                          "out vec4 fragment;\n"
+                                          "void main()\n"
+                                          "{\n"
+                                          "    fragment = vec4(color, 1.0);\n"
+                                          "}\n";
 
-static const Vertex centerTriangle[3] =
-{
-    { { -0.6f, -0.4f }, { 1.f, 0.f, 0.f } },
-    { {  0.6f, -0.4f }, { 0.f, 1.f, 0.f } },
-    { {   0.f,  0.6f }, { 0.f, 0.f, 1.f } }
-};
+static struct InputState inputState = {false, false, false, false, false, 0.0f};
+static Triangle *triangle = new Triangle();
 
-void setupVertexBuffer(GLuint* vertex_buffer) {
+static const Vertex centerTriangle[3] = {{{-0.6f, -0.4f}, {1.f, 0.f, 0.f}},
+                                         {{0.6f, -0.4f}, {0.f, 1.f, 0.f}},
+                                         {{0.f, 0.6f}, {0.f, 0.f, 1.f}}};
+
+void setupVertexBuffer(GLuint *vertex_buffer) {
   glGenBuffers(1, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, *vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(centerTriangle), centerTriangle, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(centerTriangle), centerTriangle,
+               GL_STATIC_DRAW);
 }
 
-void setupShader(GLuint* shader, const char* shaderText) {
+void setupShader(GLuint *shader, const char *shaderText) {
   glShaderSource(*shader, 1, &shaderText, NULL);
   glCompileShader(*shader);
   logShaderError(*shader);
 }
 
-void setupVertexShader(GLuint* shader) {
+void setupVertexShader(GLuint *shader) {
   *shader = glCreateShader(GL_VERTEX_SHADER);
   setupShader(shader, vertex_shader_text);
 }
 
-void setupFragmentShader(GLuint* shader) {
+void setupFragmentShader(GLuint *shader) {
   *shader = glCreateShader(GL_FRAGMENT_SHADER);
   setupShader(shader, fragment_shader_text);
 }
 
-void setupShaderProgram(GLuint* shaderProgram, const GLuint* shaders[], int shaderCount) {
+void setupShaderProgram(GLuint *shaderProgram, const GLuint *shaders[],
+                        int shaderCount) {
   *shaderProgram = glCreateProgram();
   for (int i = 0; i < shaderCount; i++) {
-    cout << "Attaching shader " << *shaders[i] << " to program " << *shaderProgram << endl;
+    cout << "Attaching shader " << *shaders[i] << " to program "
+         << *shaderProgram << endl;
     glAttachShader(*shaderProgram, *shaders[i]);
   }
   glLinkProgram(*shaderProgram);
@@ -85,7 +88,7 @@ void setupShaderProgram(GLuint* shaderProgram, const GLuint* shaders[], int shad
   }
 }
 
-GLFWwindow* initGlfwWindow() {
+GLFWwindow *initGlfwWindow() {
   // Set callback for errors and initialize glfw
   glfwSetErrorCallback(error_callback);
   if (!glfwInit()) {
@@ -100,7 +103,7 @@ GLFWwindow* initGlfwWindow() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
   // Create window object
-  GLFWwindow* window = glfwCreateWindow(1280, 960, "TRIANGLE", NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(1280, 960, "TRIANGLE", NULL, NULL);
   if (!window) {
     cout << "Failed to create glfw window!" << endl;
     glfwTerminate();
@@ -112,17 +115,17 @@ GLFWwindow* initGlfwWindow() {
 
   // Bind window to context
   glfwMakeContextCurrent(window);
-  gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+  gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
   // vsync
   glfwSwapInterval(1);
   return window;
 }
 
-void setupVertexArrayObject(const GLuint* program, GLuint* vertex_array, GLint* mvp_location) {
-  // mvp = model*view*projection, a matrix multiplication for camera/3d world stuff
-  // vPos = vector of positions
-  // vCol = vector of colors
+void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
+                            GLint *mvp_location) {
+  // mvp = model*view*projection, a matrix multiplication for camera/3d world
+  // stuff vPos = vector of positions vCol = vector of colors
   *mvp_location = glGetUniformLocation(*program, "MVP");
   const GLint vpos_location = glGetAttribLocation(*program, "vPos");
   const GLint vcol_location = glGetAttribLocation(*program, "vCol");
@@ -130,24 +133,26 @@ void setupVertexArrayObject(const GLuint* program, GLuint* vertex_array, GLint* 
   glGenVertexArrays(1, vertex_array);
   glBindVertexArray(*vertex_array);
   glEnableVertexAttribArray(vpos_location);
-  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-                        sizeof(Vertex), (void*) offsetof(Vertex, pos));
+  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, pos));
   glEnableVertexAttribArray(vcol_location);
-  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                        sizeof(Vertex), (void*) offsetof(Vertex, col));
+  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, col));
 }
 
-void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float ratio) {
+void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float delX, float delY,
+                    float delZ, float ratio, float elapsedPause) {
   mat4x4_identity(m);
-  mat4x4_rotate_Z(m, m, (float) glfwGetTime());
+  mat4x4_translate(m, delX, delY, delZ);
+  mat4x4_rotate_Z(m, m, (float)glfwGetTime() - elapsedPause);
   mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
   mat4x4_mul(mvp, p, m);
 }
 
 void doEverything() {
   cout << "Initializing window..." << endl;
-  GLFWwindow* window = initGlfwWindow();
-  
+  GLFWwindow *window = initGlfwWindow();
+
   GLuint vertex_buffer;
   setupVertexBuffer(&vertex_buffer);
 
@@ -169,21 +174,23 @@ void doEverything() {
   // Main loop!
   // TODO: this should live separate from the graphics right?
   cout << "Starting render loop..." << endl;
-  while(!glfwWindowShouldClose(window)) {
-    // TODO: get input from input layer..?
+  while (!glfwWindowShouldClose(window)) {
+    // Update logic state
+    triangle->doUpdate(glfwGetTime(), &inputState);
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    const float ratio = width / (float) height;
+    const float ratio = width / (float)height;
 
     glViewport(0, 0, width, height);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    mat4x4 m, v, mvp;  // don't need to be pointers, b/c arrays
-    rotationMatrix(m, v, mvp, ratio);
+    mat4x4 m, v, mvp; // don't need to be pointers, b/c arrays
+    rotationMatrix(m, v, mvp, triangle->delX, triangle->delY, triangle->delZ,
+                   ratio, triangle->elapsedPause);
 
     glUseProgram(program);
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) &mvp);
+    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
     glBindVertexArray(vertex_array);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -197,26 +204,27 @@ void doEverything() {
   exit(EXIT_SUCCESS);
 }
 
-void error_callback(int error, const char* description) {
+void error_callback(int error, const char *description) {
   fprintf(stderr, "Error %i: %s\n", error, description);
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void key_callback(GLFWwindow *window, int key, int scancode, int action,
+                         int mods) {
   if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     cout << "Got ESC key from user; closing" << endl;
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
-  // TODO wire up input and stuff
-  //handleKeys(key, action);
+  handleKeys(key, action, &inputState);
 }
 
 void logShaderError(GLuint shader) {
   int success;
   char infoLog[512];
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if(!success) {
+  if (!success) {
     glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    cout << "ERROR::SHADER::" << shader << "::COMPILATION_FAILED\n" << infoLog << endl;
+    cout << "ERROR::SHADER::" << shader << "::COMPILATION_FAILED\n"
+         << infoLog << endl;
   }
 }
 
@@ -226,6 +234,8 @@ void logShaderProgramError(GLuint shaderProgram) {
   glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-    cout << "ERROR::SHADER_PROGRAM::" << shaderProgram << "::COMPILATION_FAILED\n" << infoLog << endl;
+    cout << "ERROR::SHADER_PROGRAM::" << shaderProgram
+         << "::COMPILATION_FAILED\n"
+         << infoLog << endl;
   }
 }

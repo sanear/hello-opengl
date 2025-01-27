@@ -68,13 +68,14 @@ void setupVertexShader(GLuint* shader) {
 }
 
 void setupFragmentShader(GLuint* shader) {
-  *shader = glCreateShader(GL_VERTEX_SHADER);
+  *shader = glCreateShader(GL_FRAGMENT_SHADER);
   setupShader(shader, fragment_shader_text);
 }
 
 void setupShaderProgram(GLuint* program, const GLuint* shaders[], int shaderCount) {
   *program = glCreateProgram();
   for (int i = 0; i < shaderCount; i++) {
+    cout << "Attaching shader " << *shaders[i] << " to program " << *program << endl;
     glAttachShader(*program, *shaders[i]);
   }
   logShaderProgramError(*program);

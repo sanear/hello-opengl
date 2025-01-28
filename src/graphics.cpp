@@ -179,10 +179,15 @@ void doEverything() {
   cout << "Setting up vertex buffer and array objects..." << endl;
   GLuint vertex_arrays[3];
   GLint mvp_locations[3];
+  GLuint vertexBuffers[3];
   for (int i = 0; i < 3; i++) {
-    GLuint vertex_buffer;
-    const Vertex *t = triangles[i]; // TODO: I don't understand why I can't use array type here
-    setupVertexBuffer(&vertex_buffer, t);
+    // TODO: Annoying that I can't do this in one line without decaying to int*
+    Vertex t[3];
+    for (int j = 0; j < 3; j++) {
+      t[j] = triangles[i][j];
+    }
+    // const Vertex *t = triangles[i]; // TODO: I don't understand why I can't use array type here
+    setupVertexBuffer(&vertexBuffers[i], t);
 
     setupVertexArrayObject(&program, &vertex_arrays[i], &mvp_locations[i]);
   }

@@ -7,7 +7,6 @@ public:
   float delY;
   float delZ;
 
-  bool doPause;
   std::vector< float > pauseEvents;
   float elapsedPaused;
 
@@ -15,6 +14,4 @@ public:
 
   void doUpdate(float time, InputState* inputState);
   void flipPause();
-
-  ~Triangle();
 };

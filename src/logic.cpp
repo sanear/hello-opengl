@@ -7,19 +7,13 @@ Triangle::Triangle() {
   delY = 0.0f;
   delZ = 0.0f;
 
-  doPause = false;
   pauseEvents.reserve(32*sizeof(float)); // TODO: totally arbitrary
   elapsedPaused = 0.0f;
 }
 
 void Triangle::doUpdate(float currentTime, InputState *inputState) {
-  std::cout << "Start state: (" << delX << "," << delY << "," << delZ
-            << "), pause=" << doPause << " elapsedPause=" << elapsedPaused
-            << std::endl;
-
   // Handle pause input
   if (inputState->spacePressedAt > pauseEvents.back()) {
-    doPause = !doPause;
     pauseEvents.push_back(currentTime);
     inputState->spacePressedAt = 0.0f; // TODO: ick, but works
   }
@@ -32,6 +26,7 @@ void Triangle::doUpdate(float currentTime, InputState *inputState) {
   // TODO: Surely this doesn't need to be recalculated every time...
   // Could cache the completed windows and just update the current one
   // (if paused, otherwise hold steady)
+  // TODO: how to make it configurable whether the triangle starts paused?
   elapsedPaused = 0.0f;
   for (int i = 0; i < pauseEvents.size(); i += 2) {
     if (i < pauseEvents.size() - 1) {

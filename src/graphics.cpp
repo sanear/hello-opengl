@@ -43,8 +43,8 @@ static const char *fragment_shader_text = "#version 330 core\n"
                                           "    fragment = vec4(color, 1.0);\n"
                                           "}\n";
 
-static struct InputState inputState = {false, false, false, false, false, 0.0f};
-static Triangle *triangle = new Triangle();
+static struct InputState inputState = {false, false, false, false, 0.0f};
+static Triangle triangle = Triangle();
 
 static const Vertex centerTriangle[3] = {{{-0.6f, -0.4f}, {1.f, 0.f, 0.f}},
                                          {{0.6f, -0.4f}, {0.f, 1.f, 0.f}},
@@ -176,7 +176,7 @@ void doEverything() {
   cout << "Starting render loop..." << endl;
   while (!glfwWindowShouldClose(window)) {
     // Update logic state
-    triangle->doUpdate(glfwGetTime(), &inputState);
+    triangle.doUpdate(glfwGetTime(), &inputState);
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -186,8 +186,8 @@ void doEverything() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     mat4x4 m, v, mvp; // don't need to be pointers, b/c arrays
-    rotationMatrix(m, v, mvp, triangle->delX, triangle->delY, triangle->delZ,
-                   ratio, triangle->elapsedPause);
+    rotationMatrix(m, v, mvp, triangle.delX, triangle.delY, triangle.delZ,
+                   ratio, triangle.elapsedPaused);
 
     glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);

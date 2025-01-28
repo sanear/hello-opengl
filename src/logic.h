@@ -1,4 +1,5 @@
 #include "input.h"
+#include <vector>
 
 class Triangle {
 public:
@@ -7,9 +8,13 @@ public:
   float delZ;
 
   bool doPause;
-  float pausedAt;
-  float elapsedPause;
+  std::vector< float > pauseEvents;
+  float elapsedPaused;
+
+  Triangle();
 
   void doUpdate(float time, InputState* inputState);
   void flipPause();
+
+  ~Triangle();
 };

@@ -3,7 +3,6 @@ struct InputState {
   bool aHeld;
   bool sHeld;
   bool dHeld;
-  bool spaceHeld;
   float spacePressedAt;
 };
 

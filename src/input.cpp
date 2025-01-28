@@ -6,10 +6,7 @@ void handleKeys(int key, int action, InputState* inputState) {
   switch (key) {
   case GLFW_KEY_SPACE:
     if (action == GLFW_PRESS) {
-      inputState->spaceHeld = true;
       inputState->spacePressedAt = glfwGetTime();
-    } else if (action == GLFW_RELEASE) {
-      inputState->spaceHeld = false;
     }
     break;
   case GLFW_KEY_W:

@@ -3,13 +3,13 @@
 
 // TODO: this could be a class
 void handleKeys(int key, int action, InputState* inputState) {
-    switch (key) {
+  switch (key) {
   case GLFW_KEY_SPACE:
     if (action == GLFW_PRESS) {
-      inputState->spacePressed = true;
+      inputState->spaceHeld = true;
       inputState->spacePressedAt = glfwGetTime();
-    } else {
-      inputState->spacePressed = false;
+    } else if (action == GLFW_RELEASE) {
+      inputState->spaceHeld = false;
     }
     break;
   case GLFW_KEY_W:

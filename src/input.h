@@ -3,8 +3,8 @@ struct InputState {
   bool aHeld;
   bool sHeld;
   bool dHeld;
-  bool spacePressed;
+  bool spaceHeld;
   float spacePressedAt;
 };
 
-void handleKeys(int key, int action, InputState* inputState);
+void handleKeys(int key, int action, InputState *inputState);

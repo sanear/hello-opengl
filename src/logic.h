@@ -11,4 +11,5 @@ public:
   float elapsedPause;
 
   void doUpdate(float time, InputState* inputState);
+  void flipPause();
 };

@@ -66,15 +66,15 @@ static const Vertex triangles[3][3] = {
   }
 };
 
-void setupVertexBufferObject(GLuint *vertex_buffer) {
+void setupVertexBufferObject(GLuint *vertex_buffer, const Vertex triangle[3]) {
   glGenBuffers(1, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, *vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
+  glBufferData(GL_ARRAY_BUFFER, sizeof(*triangle), triangle,
                GL_STATIC_DRAW);
 }
 
 void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
-                            GLint *mvp_location) {
+                            GLint *mvp_location, const Vertex triangle[3]) {
   // mvp = model*view*projection, a matrix multiplication for camera/3d world
   // stuff vPos = vector of positions vCol = vector of colors
   *mvp_location = glGetUniformLocation(*program, "MVP");
@@ -84,10 +84,10 @@ void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
   glGenVertexArrays(1, vertex_array);
   glBindVertexArray(*vertex_array);
   glEnableVertexAttribArray(vpos_location);
-  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+  glVertexAttribPointer(vpos_location, sizeof(triangle[0]), GL_FLOAT, GL_FALSE, sizeof(Vertex),
                         (void *)offsetof(Vertex, pos));
   glEnableVertexAttribArray(vcol_location);
-  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+  glVertexAttribPointer(vcol_location, sizeof(triangle[1]), GL_FLOAT, GL_FALSE, sizeof(Vertex),
                         (void *)offsetof(Vertex, col));
 }
 
@@ -179,13 +179,15 @@ void doEverything() {
   GLuint program;
   setupShaderProgram(&program, shaders, 2);
 
-  GLuint vertex_buffer;
-  setupVertexBufferObject(&vertex_buffer);
+  GLuint vertex_buffers[sizeof(triangles)];
+  GLuint vertex_arrays[sizeof(triangles)];
+  GLint mvp_locations[sizeof(triangles)];
 
-  GLuint vertex_array;
-  GLint mvp_location;
-  cout << "Setting up vertex array object..." << endl;
-  setupVertexArrayObject(&program, &vertex_array, &mvp_location);
+  cout << "Setting up " << sizeof(triangles) << " vertex array buffers & objects..." << endl;
+  for (int i = 0; i < sizeof(triangles); i++) {
+    setupVertexBufferObject(&vertex_arrays[i], triangles[i]);
+    setupVertexArrayObject(&program, &vertex_arrays[i], &mvp_locations[i], triangles[i])
+  }
 
   // Main loop!
   // TODO: this should live separate from the graphics right?

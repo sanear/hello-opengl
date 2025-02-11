@@ -46,15 +46,49 @@ static const char *fragment_shader_text = "#version 330 core\n"
 static struct InputState inputState = {false, false, false, false, 0.0f};
 static Triangle triangle = Triangle();
 
-static const Vertex centerTriangle[3] = {{{-0.6f, -0.4f}, {1.f, 0.f, 0.f}},
-                                         {{0.6f, -0.4f}, {0.f, 1.f, 0.f}},
-                                         {{0.f, 0.6f}, {0.f, 0.f, 1.f}}};
+const float sqrt_48 = 0.69282032f;
 
-void setupVertexBuffer(GLuint *vertex_buffer) {
+static const Vertex triangles[3][3] = {
+  {
+    {{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
+    {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
+    {{0.f, sqrt_48}, {0.f, 0.f, 1.f}}
+  },
+  {
+    {{-0.8f, -sqrt_48}, {1.f, 0.f, 0.f}},
+    {{-0.4f, 0.f}, {0.f, 1.f, 0.f}},
+    {{0.f, -sqrt_48}, {0.f, 0.f, 1.f}}
+  },
+  {
+    {{0.f, -sqrt_48}, {1.f, 0.f, 0.f}},
+    {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
+    {{0.8f, -sqrt_48}, {0.f, 0.f, 1.f}}
+  }
+};
+
+void setupVertexBufferObject(GLuint *vertex_buffer) {
   glGenBuffers(1, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, *vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(centerTriangle), centerTriangle,
+  glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
                GL_STATIC_DRAW);
+}
+
+void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
+                            GLint *mvp_location) {
+  // mvp = model*view*projection, a matrix multiplication for camera/3d world
+  // stuff vPos = vector of positions vCol = vector of colors
+  *mvp_location = glGetUniformLocation(*program, "MVP");
+  const GLint vpos_location = glGetAttribLocation(*program, "vPos");
+  const GLint vcol_location = glGetAttribLocation(*program, "vCol");
+
+  glGenVertexArrays(1, vertex_array);
+  glBindVertexArray(*vertex_array);
+  glEnableVertexAttribArray(vpos_location);
+  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, pos));
+  glEnableVertexAttribArray(vcol_location);
+  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, col));
 }
 
 void setupShader(GLuint *shader, const char *shaderText) {
@@ -103,7 +137,7 @@ GLFWwindow *initGlfwWindow() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
   // Create window object
-  GLFWwindow *window = glfwCreateWindow(1280, 960, "TRIANGLE", NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(1600, 1200, "TRIANGLE", NULL, NULL);
   if (!window) {
     cout << "Failed to create glfw window!" << endl;
     glfwTerminate();
@@ -122,24 +156,6 @@ GLFWwindow *initGlfwWindow() {
   return window;
 }
 
-void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
-                            GLint *mvp_location) {
-  // mvp = model*view*projection, a matrix multiplication for camera/3d world
-  // stuff vPos = vector of positions vCol = vector of colors
-  *mvp_location = glGetUniformLocation(*program, "MVP");
-  const GLint vpos_location = glGetAttribLocation(*program, "vPos");
-  const GLint vcol_location = glGetAttribLocation(*program, "vCol");
-
-  glGenVertexArrays(1, vertex_array);
-  glBindVertexArray(*vertex_array);
-  glEnableVertexAttribArray(vpos_location);
-  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)offsetof(Vertex, pos));
-  glEnableVertexAttribArray(vcol_location);
-  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)offsetof(Vertex, col));
-}
-
 void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float delX, float delY,
                     float delZ, float ratio, float elapsedPause) {
   mat4x4_identity(m);
@@ -153,9 +169,6 @@ void doEverything() {
   cout << "Initializing window..." << endl;
   GLFWwindow *window = initGlfwWindow();
 
-  GLuint vertex_buffer;
-  setupVertexBuffer(&vertex_buffer);
-
   cout << "Initializing shaders..." << endl;
   GLuint vertex_shader, fragment_shader;
   setupVertexShader(&vertex_shader);
@@ -165,6 +178,9 @@ void doEverything() {
   cout << "Creating program..." << endl;
   GLuint program;
   setupShaderProgram(&program, shaders, 2);
+
+  GLuint vertex_buffer;
+  setupVertexBufferObject(&vertex_buffer);
 
   GLuint vertex_array;
   GLint mvp_location;
@@ -192,7 +208,7 @@ void doEverything() {
     glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
     glBindVertexArray(vertex_array);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 3*3);
 
     glfwSwapBuffers(window);
 

@@ -44,7 +44,7 @@ static const char *fragment_shader_text = "#version 330 core\n"
                                           "}\n";
 
 static struct InputState inputState = {false, false, false, false, 0.0f};
-static Triangle triangle = Triangle();
+static Triangle position_object = Triangle(); // TODO: wrong class name
 
 const float sqrt_48 = 0.69282032f;
 
@@ -68,8 +68,13 @@ static const Vertex triangle_positions[3][3] = {
   }
 };
 
-static const int dimensions = sizeof(triangle_positions[0]);
+static const int dimensions = sizeof(triangle_positions[0]) / sizeof(Vertex);
 static const int triangles_size = sizeof(triangle_positions) / (dimensions * sizeof(Vertex));
+
+void printSizes() {
+  cout << "dimensions: " << dimensions << endl;
+  cout << "triangles_size: " << triangles_size << endl;
+}
 
 void setupVertexBufferObject(GLuint *vertex_buffer, const Vertex triangle[dimensions]) {
   glGenBuffers(1, vertex_buffer);
@@ -94,6 +99,15 @@ void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
   glEnableVertexAttribArray(vcol_location);
   glVertexAttribPointer(vcol_location, sizeof(triangle[1]), GL_FLOAT, GL_FALSE, sizeof(Vertex),
                         (void *)offsetof(Vertex, col));
+}
+
+void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float delX, float delY,
+                    float delZ, float ratio, float elapsedPause) {
+  mat4x4_identity(m);
+  mat4x4_translate(m, delX, delY, delZ);
+  mat4x4_rotate_Z(m, m, (float)glfwGetTime() - elapsedPause);
+  mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+  mat4x4_mul(mvp, p, m);
 }
 
 void setupShader(GLuint *shader, const char *shaderText) {
@@ -161,16 +175,10 @@ GLFWwindow *initGlfwWindow() {
   return window;
 }
 
-void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float delX, float delY,
-                    float delZ, float ratio, float elapsedPause) {
-  mat4x4_identity(m);
-  mat4x4_translate(m, delX, delY, delZ);
-  mat4x4_rotate_Z(m, m, (float)glfwGetTime() - elapsedPause);
-  mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-  mat4x4_mul(mvp, p, m);
-}
-
 void doEverything() {
+  cout << "Sizes:" << endl;
+  printSizes();
+
   cout << "Initializing window..." << endl;
   GLFWwindow *window = initGlfwWindow();
 
@@ -184,12 +192,12 @@ void doEverything() {
   GLuint program;
   setupShaderProgram(&program, shaders, 2);
 
-  GLuint vertex_buffers[sizeof(triangle_positions)];
-  GLuint vertex_arrays[sizeof(triangle_positions)];
-  GLint mvp_locations[sizeof(triangle_positions)];
+  GLuint vertex_buffers[triangles_size];
+  GLuint vertex_arrays[triangles_size];
+  GLint mvp_locations[triangles_size];
 
-  cout << "Setting up " << sizeof(triangle_positions) << " vertex array buffers & objects..." << endl;
-  for (int i = 0; i < sizeof(triangle_positions); i++) {
+  cout << "Setting up " << triangles_size << " vertex array buffers & objects..." << endl;
+  for (int i = 0; i < triangles_size; i++) {
     setupVertexBufferObject(&vertex_arrays[i], triangle_positions[i]);
     setupVertexArrayObject(&program, &vertex_arrays[i], &mvp_locations[i], triangle_positions[i]);
   }
@@ -199,7 +207,7 @@ void doEverything() {
   cout << "Starting render loop..." << endl;
   while (!glfwWindowShouldClose(window)) {
     // Update logic state
-    triangle.doUpdate(glfwGetTime(), &inputState);
+    position_object.doUpdate(glfwGetTime(), &inputState);
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -209,11 +217,11 @@ void doEverything() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     mat4x4 m, v, mvp; // don't need to be pointers, b/c arrays
-    rotationMatrix(m, v, mvp, triangle.delX, triangle.delY, triangle.delZ,
-                   ratio, triangle.elapsedPaused);
+    rotationMatrix(m, v, mvp, position_object.delX, position_object.delY, position_object.delZ,
+                   ratio, position_object.elapsedPaused);
 
     glUseProgram(program);
-    for (int i = 0; i < sizeof(triangle_positions); i++) {
+    for (int i = 0; i < triangles_size; i++) {
       glUniformMatrix4fv(mvp_locations[i], 1, GL_FALSE, (const GLfloat *)&mvp);
       glBindVertexArray(vertex_arrays[i]);
       glDrawArrays(GL_TRIANGLES, i*sizeof(triangle_positions[i]), i*sizeof(triangle_positions[i])+sizeof(triangle_positions[i]));

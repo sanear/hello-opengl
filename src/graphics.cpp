@@ -48,7 +48,9 @@ static Triangle triangle = Triangle();
 
 const float sqrt_48 = 0.69282032f;
 
-static const Vertex triangles[3][3] = {
+// TODO: programmatically generate a sierpinsky triangle
+// hint - recurse & do a bunch of fiddly math that'll probably have floating point decay
+static const Vertex triangle_positions[3][3] = {
   {
     {{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
     {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
@@ -66,7 +68,10 @@ static const Vertex triangles[3][3] = {
   }
 };
 
-void setupVertexBufferObject(GLuint *vertex_buffer, const Vertex triangle[3]) {
+static const int dimensions = sizeof(triangle_positions[0]);
+static const int triangles_size = sizeof(triangle_positions) / (dimensions * sizeof(Vertex));
+
+void setupVertexBufferObject(GLuint *vertex_buffer, const Vertex triangle[dimensions]) {
   glGenBuffers(1, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, *vertex_buffer);
   glBufferData(GL_ARRAY_BUFFER, sizeof(*triangle), triangle,
@@ -74,7 +79,7 @@ void setupVertexBufferObject(GLuint *vertex_buffer, const Vertex triangle[3]) {
 }
 
 void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
-                            GLint *mvp_location, const Vertex triangle[3]) {
+                            GLint *mvp_location, const Vertex triangle[dimensions]) {
   // mvp = model*view*projection, a matrix multiplication for camera/3d world
   // stuff vPos = vector of positions vCol = vector of colors
   *mvp_location = glGetUniformLocation(*program, "MVP");
@@ -179,14 +184,14 @@ void doEverything() {
   GLuint program;
   setupShaderProgram(&program, shaders, 2);
 
-  GLuint vertex_buffers[sizeof(triangles)];
-  GLuint vertex_arrays[sizeof(triangles)];
-  GLint mvp_locations[sizeof(triangles)];
+  GLuint vertex_buffers[sizeof(triangle_positions)];
+  GLuint vertex_arrays[sizeof(triangle_positions)];
+  GLint mvp_locations[sizeof(triangle_positions)];
 
-  cout << "Setting up " << sizeof(triangles) << " vertex array buffers & objects..." << endl;
-  for (int i = 0; i < sizeof(triangles); i++) {
-    setupVertexBufferObject(&vertex_arrays[i], triangles[i]);
-    setupVertexArrayObject(&program, &vertex_arrays[i], &mvp_locations[i], triangles[i])
+  cout << "Setting up " << sizeof(triangle_positions) << " vertex array buffers & objects..." << endl;
+  for (int i = 0; i < sizeof(triangle_positions); i++) {
+    setupVertexBufferObject(&vertex_arrays[i], triangle_positions[i]);
+    setupVertexArrayObject(&program, &vertex_arrays[i], &mvp_locations[i], triangle_positions[i]);
   }
 
   // Main loop!
@@ -208,9 +213,11 @@ void doEverything() {
                    ratio, triangle.elapsedPaused);
 
     glUseProgram(program);
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
-    glBindVertexArray(vertex_array);
-    glDrawArrays(GL_TRIANGLES, 0, 3*3);
+    for (int i = 0; i < sizeof(triangle_positions); i++) {
+      glUniformMatrix4fv(mvp_locations[i], 1, GL_FALSE, (const GLfloat *)&mvp);
+      glBindVertexArray(vertex_arrays[i]);
+      glDrawArrays(GL_TRIANGLES, i*sizeof(triangle_positions[i]), i*sizeof(triangle_positions[i])+sizeof(triangle_positions[i]));
+    }
 
     glfwSwapBuffers(window);
 

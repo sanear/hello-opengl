@@ -48,23 +48,15 @@ static Triangle triangle = Triangle();
 
 const float sqrt_48 = 0.69282032f;
 
-static const Vertex triangles[3][3] = {
-  {
-    {{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
-    {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
-    {{0.f, sqrt_48}, {0.f, 0.f, 1.f}}
-  },
-  {
-    {{-0.8f, -sqrt_48}, {1.f, 0.f, 0.f}},
-    {{-0.4f, 0.f}, {0.f, 1.f, 0.f}},
-    {{0.f, -sqrt_48}, {0.f, 0.f, 1.f}}
-  },
-  {
-    {{0.f, -sqrt_48}, {1.f, 0.f, 0.f}},
-    {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
-    {{0.8f, -sqrt_48}, {0.f, 0.f, 1.f}}
-  }
-};
+static const Vertex triangles[3][3] = {{{{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
+                                        {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
+                                        {{0.f, sqrt_48}, {0.f, 0.f, 1.f}}},
+                                       {{{-0.8f, -sqrt_48}, {1.f, 0.f, 0.f}},
+                                        {{-0.4f, 0.f}, {0.f, 1.f, 0.f}},
+                                        {{0.f, -sqrt_48}, {0.f, 0.f, 1.f}}},
+                                       {{{0.f, -sqrt_48}, {1.f, 0.f, 0.f}},
+                                        {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
+                                        {{0.8f, -sqrt_48}, {0.f, 0.f, 1.f}}}};
 
 void setupShader(GLuint *shader, const char *shaderText) {
   glShaderSource(*shader, 1, &shaderText, NULL);
@@ -171,8 +163,7 @@ void doEverything() {
 
   for (int i = 0; i < sizeof(vertex_arrays) / sizeof(vertex_arrays[0]); i++) {
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles, GL_STATIC_DRAW);
     glBindVertexArray(vertex_arrays[i]);
     glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -202,7 +193,7 @@ void doEverything() {
 
     glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
-    glDrawArrays(GL_TRIANGLES, 0, 3*3);
+    glDrawArrays(GL_TRIANGLES, 0, 3 * 3);
 
     glfwSwapBuffers(window);
 

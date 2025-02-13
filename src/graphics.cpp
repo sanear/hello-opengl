@@ -36,18 +36,6 @@ static const char *vertex_shader_text =
     "}\n";
 
 
-static const char *vertex_shader_2_text =
-    "#version 330 core\n"
-    "uniform mat4 MVP;\n"
-    "in vec3 vCol;\n"
-    "in vec2 vPos;\n"
-    "out vec3 color;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-    "    color = vec3(0.5, 0.6, 0.7);\n"
-    "}\n";
-
 static const char *rgb_fragment_shader_text = "#version 330 core\n"
                                           "in vec3 color;\n"
                                           "out vec4 fragment;\n"
@@ -158,13 +146,12 @@ void doEverything() {
   GLFWwindow *window = initGlfwWindow();
 
   cout << "Initializing shaders..." << endl;
-  GLuint vertex_shader, vertex_shader_2, fragment_shader, fragment_shader_2;
+  GLuint vertex_shader, fragment_shader, fragment_shader_2;
   setupVertexShader(&vertex_shader, vertex_shader_text);
-  setupVertexShader(&vertex_shader_2, vertex_shader_2_text);
   setupFragmentShader(&fragment_shader, rgb_fragment_shader_text);
   setupFragmentShader(&fragment_shader_2, rgb_fragment_shader_2_text);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
-  const GLuint *shaders_2[] = {&vertex_shader_2, &fragment_shader_2};
+  const GLuint *shaders_2[] = {&vertex_shader, &fragment_shader_2};
 
   cout << "Creating program..." << endl;
   GLuint program, program_2;
@@ -222,7 +209,7 @@ void doEverything() {
     for (int i = 0; i < 3; i++) {
       // TODO: this doesn't work; I think there's something about these
       // shaders that's different than the tutorials. Even using separate vertex
-      // shaders doesn't work. I give up
+      // shaders doesn't work.
       if (i == 1) {
         glUseProgram(program_2);
       } else {

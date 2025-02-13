@@ -35,7 +35,7 @@ static const char *vertex_shader_text =
     "    color = vCol;\n"
     "}\n";
 
-static const char *fragment_shader_text = "#version 330 core\n"
+static const char *rgb_fragment_shader_text = "#version 330 core\n"
                                           "in vec3 color;\n"
                                           "out vec4 fragment;\n"
                                           "void main()\n"
@@ -71,7 +71,7 @@ void setupVertexShader(GLuint *shader) {
 
 void setupFragmentShader(GLuint *shader) {
   *shader = glCreateShader(GL_FRAGMENT_SHADER);
-  setupShader(shader, fragment_shader_text);
+  setupShader(shader, rgb_fragment_shader_text);
 }
 
 void setupShaderProgram(GLuint *shaderProgram, const GLuint *shaders[],
@@ -148,12 +148,12 @@ void doEverything() {
 
   // Setup buffer and array objects
   cout << "Setting up vertex array and buffer objects..." << endl;
-  GLuint vertex_buffers[2];
-  glGenBuffers(2, vertex_buffers);
+  GLuint vertex_buffers[3];
+  glGenBuffers(3, vertex_buffers);
 
-  GLuint vertex_arrays[2];
+  GLuint vertex_arrays[3];
   GLint mvp_location;
-  glGenVertexArrays(2, vertex_arrays);
+  glGenVertexArrays(3, vertex_arrays);
 
   // mvp = model*view*projection, a matrix multiplication for camera/3d world
   // stuff vPos = vector of positions vCol = vector of colors
@@ -161,16 +161,17 @@ void doEverything() {
   const GLint vpos_location = glGetAttribLocation(program, "vPos");
   const GLint vcol_location = glGetAttribLocation(program, "vCol");
 
-  for (int i = 0; i < sizeof(vertex_arrays) / sizeof(vertex_arrays[0]); i++) {
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles, GL_STATIC_DRAW);
+  for (int i = 0; i < 3; i++) {
+    cout << "Binding vao and vbo " << i << endl;
     glBindVertexArray(vertex_arrays[i]);
-    glEnableVertexAttribArray(vpos_location);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles[i]), triangles[i], GL_STATIC_DRAW);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *)offsetof(Vertex, pos));
-    glEnableVertexAttribArray(vcol_location);
+    glEnableVertexAttribArray(vpos_location);
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *)offsetof(Vertex, col));
+    glEnableVertexAttribArray(vcol_location);
   }
 
   // Main loop!
@@ -193,7 +194,11 @@ void doEverything() {
 
     glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
-    glDrawArrays(GL_TRIANGLES, 0, 3 * 3);
+
+    for (int i = 0; i < 3; i++) {
+      glBindVertexArray(vertex_arrays[i]);
+      glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
 
     glfwSwapBuffers(window);
 

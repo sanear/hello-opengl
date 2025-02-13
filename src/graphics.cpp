@@ -66,31 +66,6 @@ static const Vertex triangles[3][3] = {
   }
 };
 
-void setupVertexBufferObject(GLuint *vertex_buffer) {
-  glGenBuffers(1, vertex_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, *vertex_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
-               GL_STATIC_DRAW);
-}
-
-void setupVertexArrayObject(const GLuint *program, GLuint *vertex_array,
-                            GLint *mvp_location) {
-  // mvp = model*view*projection, a matrix multiplication for camera/3d world
-  // stuff vPos = vector of positions vCol = vector of colors
-  *mvp_location = glGetUniformLocation(*program, "MVP");
-  const GLint vpos_location = glGetAttribLocation(*program, "vPos");
-  const GLint vcol_location = glGetAttribLocation(*program, "vCol");
-
-  glGenVertexArrays(1, vertex_array);
-  glBindVertexArray(*vertex_array);
-  glEnableVertexAttribArray(vpos_location);
-  glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)offsetof(Vertex, pos));
-  glEnableVertexAttribArray(vcol_location);
-  glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                        (void *)offsetof(Vertex, col));
-}
-
 void setupShader(GLuint *shader, const char *shaderText) {
   glShaderSource(*shader, 1, &shaderText, NULL);
   glCompileShader(*shader);
@@ -179,13 +154,33 @@ void doEverything() {
   GLuint program;
   setupShaderProgram(&program, shaders, 2);
 
-  GLuint vertex_buffer;
-  setupVertexBufferObject(&vertex_buffer);
+  // Setup buffer and array objects
+  cout << "Setting up vertex array and buffer objects..." << endl;
+  GLuint vertex_buffers[2];
+  glGenBuffers(2, vertex_buffers);
 
-  GLuint vertex_array;
+  GLuint vertex_arrays[2];
   GLint mvp_location;
-  cout << "Setting up vertex array object..." << endl;
-  setupVertexArrayObject(&program, &vertex_array, &mvp_location);
+  glGenVertexArrays(2, vertex_arrays);
+
+  // mvp = model*view*projection, a matrix multiplication for camera/3d world
+  // stuff vPos = vector of positions vCol = vector of colors
+  mvp_location = glGetUniformLocation(program, "MVP");
+  const GLint vpos_location = glGetAttribLocation(program, "vPos");
+  const GLint vcol_location = glGetAttribLocation(program, "vCol");
+
+  for (int i = 0; i < sizeof(vertex_arrays) / sizeof(vertex_arrays[0]); i++) {
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles,
+                 GL_STATIC_DRAW);
+    glBindVertexArray(vertex_arrays[i]);
+    glEnableVertexAttribArray(vpos_location);
+    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          (void *)offsetof(Vertex, pos));
+    glEnableVertexAttribArray(vcol_location);
+    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          (void *)offsetof(Vertex, col));
+  }
 
   // Main loop!
   // TODO: this should live separate from the graphics right?
@@ -207,7 +202,6 @@ void doEverything() {
 
     glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
-    glBindVertexArray(vertex_array);
     glDrawArrays(GL_TRIANGLES, 0, 3*3);
 
     glfwSwapBuffers(window);

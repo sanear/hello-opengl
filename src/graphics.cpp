@@ -35,12 +35,33 @@ static const char *vertex_shader_text =
     "    color = vCol;\n"
     "}\n";
 
+
+static const char *vertex_shader_2_text =
+    "#version 330 core\n"
+    "uniform mat4 MVP;\n"
+    "in vec3 vCol;\n"
+    "in vec2 vPos;\n"
+    "out vec3 color;\n"
+    "void main()\n"
+    "{\n"
+    "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
+    "    color = vec3(0.5, 0.6, 0.7);\n"
+    "}\n";
+
 static const char *rgb_fragment_shader_text = "#version 330 core\n"
                                           "in vec3 color;\n"
                                           "out vec4 fragment;\n"
                                           "void main()\n"
                                           "{\n"
                                           "    fragment = vec4(color, 1.0);\n"
+                                          "}\n";
+
+static const char *rgb_fragment_shader_2_text = "#version 330 core\n"
+                                          "in vec3 color;\n"
+                                          "out vec4 fragment;\n"
+                                          "void main()\n"
+                                          "{\n"
+                                          "    fragment = vec4(0.5, 0.6, 0.7, -1.0);\n"
                                           "}\n";
 
 static struct InputState inputState = {false, false, false, false, 0.0f};
@@ -64,14 +85,14 @@ void setupShader(GLuint *shader, const char *shaderText) {
   logShaderError(*shader);
 }
 
-void setupVertexShader(GLuint *shader) {
+void setupVertexShader(GLuint *shader, const char *text) {
   *shader = glCreateShader(GL_VERTEX_SHADER);
-  setupShader(shader, vertex_shader_text);
+  setupShader(shader, text);
 }
 
-void setupFragmentShader(GLuint *shader) {
+void setupFragmentShader(GLuint *shader, const char *text) {
   *shader = glCreateShader(GL_FRAGMENT_SHADER);
-  setupShader(shader, rgb_fragment_shader_text);
+  setupShader(shader, text);
 }
 
 void setupShaderProgram(GLuint *shaderProgram, const GLuint *shaders[],
@@ -137,14 +158,18 @@ void doEverything() {
   GLFWwindow *window = initGlfwWindow();
 
   cout << "Initializing shaders..." << endl;
-  GLuint vertex_shader, fragment_shader;
-  setupVertexShader(&vertex_shader);
-  setupFragmentShader(&fragment_shader);
+  GLuint vertex_shader, vertex_shader_2, fragment_shader, fragment_shader_2;
+  setupVertexShader(&vertex_shader, vertex_shader_text);
+  setupVertexShader(&vertex_shader_2, vertex_shader_2_text);
+  setupFragmentShader(&fragment_shader, rgb_fragment_shader_text);
+  setupFragmentShader(&fragment_shader_2, rgb_fragment_shader_2_text);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
+  const GLuint *shaders_2[] = {&vertex_shader_2, &fragment_shader_2};
 
   cout << "Creating program..." << endl;
-  GLuint program;
+  GLuint program, program_2;
   setupShaderProgram(&program, shaders, 2);
+  setupShaderProgram(&program_2, shaders_2, 2);
 
   // Setup buffer and array objects
   cout << "Setting up vertex array and buffer objects..." << endl;
@@ -192,10 +217,17 @@ void doEverything() {
     rotationMatrix(m, v, mvp, triangle.delX, triangle.delY, triangle.delZ,
                    ratio, triangle.elapsedPaused);
 
-    glUseProgram(program);
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
 
     for (int i = 0; i < 3; i++) {
+      // TODO: this doesn't work; I think there's something about these
+      // shaders that's different than the tutorials. Even using separate vertex
+      // shaders doesn't work. I give up
+      if (i == 1) {
+        glUseProgram(program_2);
+      } else {
+        glUseProgram(program);
+      }
       glBindVertexArray(vertex_arrays[i]);
       glDrawArrays(GL_TRIANGLES, 0, 3);
     }

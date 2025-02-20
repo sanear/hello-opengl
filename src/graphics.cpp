@@ -46,7 +46,7 @@ static const char *rgb_fragment_shader_text =
 
 static const char *uniform_fragment_shader_text =
     "#version 330 core\n"
-    "uniform vec3 uniColor;\n"
+    "uniform float uniColor;\n"
     "in vec3 color;\n"
     "out vec4 fragment;\n"
     "void main()\n"
@@ -227,8 +227,7 @@ void doEverything() {
         glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
                            (const GLfloat *)&mvp);
 
-        glUniform3f(uniColor_location, triangle.colorMultiplier,
-                    triangle.colorMultiplier, triangle.colorMultiplier);
+        glUniform1f(uniColor_location, triangle.colorMultiplier);
       } else {
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);

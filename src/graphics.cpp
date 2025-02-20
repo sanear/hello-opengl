@@ -59,8 +59,8 @@ static Triangle triangle = Triangle(glfwGetTime());
 const float sqrt_48 = 0.69282032f;
 
 static const Vertex triangles[3][3] = {{{{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
-                                        {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
-                                        {{0.f, sqrt_48}, {0.f, 0.f, 1.f}}},
+                                        {{0.f, sqrt_48}, {0.f, 1.f, 0.f}},
+                                        {{0.4f, 0.f}, {0.f, 0.f, 1.f}}},
                                        {{{-0.8f, -sqrt_48}, {1.f, 0.f, 0.f}},
                                         {{-0.4f, 0.f}, {0.f, 1.f, 0.f}},
                                         {{0.f, -sqrt_48}, {0.f, 0.f, 1.f}}},

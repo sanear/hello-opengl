@@ -2,6 +2,7 @@
 #include <vector>
 
 class Triangle {
+  void construct();
 public:
   float delX;
   float delY;
@@ -11,6 +12,7 @@ public:
   float elapsedPaused;
 
   Triangle();
+  Triangle(float currentTime);
 
   void doUpdate(float time, InputState* inputState);
   void flipPause();

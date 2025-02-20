@@ -44,16 +44,17 @@ static const char *rgb_fragment_shader_text = "#version 330 core\n"
                                           "    fragment = vec4(color, 1.0);\n"
                                           "}\n";
 
-static const char *solid_color_fragment_shader_text = "#version 330 core\n"
+static const char *fraction_fragment_shader_text = "#version 330 core\n"
                                           "in vec3 color;\n"
                                           "out vec4 fragment;\n"
                                           "void main()\n"
                                           "{\n"
-                                          "    fragment = vec4(0.5, 0.6, 0.7, -1.0);\n"
+                                          "    fragment = vec4(0.6*color, 1.0);\n"
                                           "}\n";
 
 static struct InputState inputState = {false, false, false, false, 0.0f};
-static Triangle triangle = Triangle();
+// Pass glfwGetTime() to start out paused, else starts spinning
+static Triangle triangle = Triangle(glfwGetTime());
 
 const float sqrt_48 = 0.69282032f;
 
@@ -149,7 +150,7 @@ void doEverything() {
   GLuint vertex_shader, fragment_shader, fragment_shader_2;
   setupVertexShader(&vertex_shader, vertex_shader_text);
   setupFragmentShader(&fragment_shader, rgb_fragment_shader_text);
-  setupFragmentShader(&fragment_shader_2, solid_color_fragment_shader_text);
+  setupFragmentShader(&fragment_shader_2, fraction_fragment_shader_text);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
   const GLuint *shaders_2[] = {&vertex_shader, &fragment_shader_2};
 
@@ -208,7 +209,7 @@ void doEverything() {
       // TODO: this doesn't work; I think there's something about these
       // shaders that's different than the tutorials. Even using separate vertex
       // shaders doesn't work.
-      if (i == 0) {
+      if (i != 1) {
         glUseProgram(program_2);
       } else {
         glUseProgram(program);

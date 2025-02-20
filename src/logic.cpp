@@ -3,6 +3,15 @@
 #include <iostream>
 
 Triangle::Triangle() {
+  construct();
+}
+
+Triangle::Triangle(float currentTime) {
+  construct();
+  pauseEvents.push_back(currentTime);
+}
+
+void Triangle::construct() {
   delX = 0.0f;
   delY = 0.0f;
   delZ = 0.0f;

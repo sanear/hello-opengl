@@ -35,7 +35,6 @@ void Triangle::doUpdate(float currentTime, InputState *inputState) {
   // TODO: Surely this doesn't need to be recalculated every time...
   // Could cache the completed windows and just update the current one
   // (if paused, otherwise hold steady)
-  // TODO: how to make it configurable whether the triangle starts paused?
   elapsedPaused = 0.0f;
   for (int i = 0; i < pauseEvents.size(); i += 2) {
     if (i < pauseEvents.size() - 1) {

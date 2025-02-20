@@ -47,15 +47,25 @@ static const char *rgb_fragment_shader_text =
 static const char *uniform_fragment_shader_text =
     "#version 330 core\n"
     "uniform vec3 uniColor;\n"
+    "in vec3 color;\n"
     "out vec4 fragment;\n"
     "void main()\n"
     "{\n"
-    "    fragment = vec4(uniColor, 1.0);\n"
+    "    fragment = vec4(uniColor * color, 1.0);\n"
     "}\n";
 
+// TODO: obviously this doesn't go here
+bool START_PAUSED = true;
+Triangle initTriangle(bool start_paused) {
+  if (START_PAUSED) {
+    return Triangle(glfwGetTime());
+  } else {
+    return Triangle();
+  }
+}
+
 static struct InputState inputState = {false, false, false, false, 0.0f};
-// Pass glfwGetTime() to start out paused, else starts spinning
-static Triangle triangle = Triangle(glfwGetTime());
+static Triangle triangle = initTriangle(START_PAUSED);
 
 const float sqrt_48 = 0.69282032f;
 
@@ -138,7 +148,7 @@ void rotationMatrix(mat4x4 m, mat4x4 p, mat4x4 mvp, float delX, float delY,
                     float delZ, float ratio, float elapsedPause) {
   mat4x4_identity(m);
   mat4x4_translate(m, delX, delY, delZ);
-  mat4x4_rotate_Z(m, m, (float)glfwGetTime() - elapsedPause);
+  mat4x4_rotate_Z(m, m, 0.5 * ((float)glfwGetTime() - elapsedPause));
   mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
   mat4x4_mul(mvp, p, m);
 }
@@ -217,9 +227,11 @@ void doEverything() {
         glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
                            (const GLfloat *)&mvp);
 
-        glUniform3f(uniColor_location, 0.3f * triangle.elapsedPaused / glfwGetTime(),
-                    0.4f * triangle.elapsedPaused / glfwGetTime(),
-                    0.5f * triangle.elapsedPaused / glfwGetTime());
+        // TODO: this is not really graphics logic
+        float pauseMultiplier =
+            triangle.elapsedPaused / (glfwGetTime() - triangle.elapsedPaused);
+        glUniform3f(uniColor_location, pauseMultiplier, pauseMultiplier,
+                    pauseMultiplier);
       } else {
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);

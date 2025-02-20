@@ -35,22 +35,23 @@ static const char *vertex_shader_text =
     "    color = vCol;\n"
     "}\n";
 
+static const char *rgb_fragment_shader_text =
+    "#version 330 core\n"
+    "in vec3 color;\n"
+    "out vec4 fragment;\n"
+    "void main()\n"
+    "{\n"
+    "    fragment = vec4(color, 1.0);\n"
+    "}\n";
 
-static const char *rgb_fragment_shader_text = "#version 330 core\n"
-                                          "in vec3 color;\n"
-                                          "out vec4 fragment;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "    fragment = vec4(color, 1.0);\n"
-                                          "}\n";
-
-static const char *fraction_fragment_shader_text = "#version 330 core\n"
-                                          "in vec3 color;\n"
-                                          "out vec4 fragment;\n"
-                                          "void main()\n"
-                                          "{\n"
-                                          "    fragment = vec4(0.6*color, 1.0);\n"
-                                          "}\n";
+static const char *uniform_fragment_shader_text =
+    "#version 330 core\n"
+    "uniform vec3 uniColor;\n"
+    "out vec4 fragment;\n"
+    "void main()\n"
+    "{\n"
+    "    fragment = vec4(uniColor, 1.0);\n"
+    "}\n";
 
 static struct InputState inputState = {false, false, false, false, 0.0f};
 // Pass glfwGetTime() to start out paused, else starts spinning
@@ -147,17 +148,17 @@ void doEverything() {
   GLFWwindow *window = initGlfwWindow();
 
   cout << "Initializing shaders..." << endl;
-  GLuint vertex_shader, fragment_shader, fragment_shader_2;
+  GLuint vertex_shader, fragment_shader, uniform_fragment_shader;
   setupVertexShader(&vertex_shader, vertex_shader_text);
   setupFragmentShader(&fragment_shader, rgb_fragment_shader_text);
-  setupFragmentShader(&fragment_shader_2, fraction_fragment_shader_text);
+  setupFragmentShader(&uniform_fragment_shader, uniform_fragment_shader_text);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
-  const GLuint *shaders_2[] = {&vertex_shader, &fragment_shader_2};
+  const GLuint *shaders_2[] = {&vertex_shader, &uniform_fragment_shader};
 
   cout << "Creating program..." << endl;
-  GLuint program, program_2;
+  GLuint program, uniform_program;
   setupShaderProgram(&program, shaders, 2);
-  setupShaderProgram(&program_2, shaders_2, 2);
+  setupShaderProgram(&uniform_program, shaders_2, 2);
 
   // Setup buffer and array objects
   cout << "Setting up vertex array and buffer objects..." << endl;
@@ -165,20 +166,25 @@ void doEverything() {
   glGenBuffers(3, vertex_buffers);
 
   GLuint vertex_arrays[3];
-  GLint mvp_location;
   glGenVertexArrays(3, vertex_arrays);
 
+  // Uniforms!
+  GLint uniform_mvp_location = glGetUniformLocation(uniform_program, "MVP");
+  GLint uniColor_location = glGetUniformLocation(uniform_program, "uniColor");
   // mvp = model*view*projection, a matrix multiplication for camera/3d world
-  // stuff vPos = vector of positions vCol = vector of colors
-  mvp_location = glGetUniformLocation(program, "MVP");
+  // stuff
+  GLint mvp_location = glGetUniformLocation(program, "MVP");
+  // vPos = vector of positions
   const GLint vpos_location = glGetAttribLocation(program, "vPos");
+  // vCol = vector of colors
   const GLint vcol_location = glGetAttribLocation(program, "vCol");
 
   for (int i = 0; i < 3; i++) {
     cout << "Binding vao and vbo " << i << endl;
     glBindVertexArray(vertex_arrays[i]);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles[i]), triangles[i], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles[i]), triangles[i],
+                 GL_STATIC_DRAW);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *)offsetof(Vertex, pos));
     glEnableVertexAttribArray(vpos_location);
@@ -206,17 +212,18 @@ void doEverything() {
                    ratio, triangle.elapsedPaused);
 
     for (int i = 0; i < 3; i++) {
-      // TODO: this doesn't work; I think there's something about these
-      // shaders that's different than the tutorials. Even using separate vertex
-      // shaders doesn't work.
-      if (i != 1) {
-        glUseProgram(program_2);
+      if (i == 1) {
+        glUseProgram(uniform_program);
+        glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
+                           (const GLfloat *)&mvp);
+
+        glUniform3f(uniColor_location, 0.3f * triangle.elapsedPaused / glfwGetTime(),
+                    0.4f * triangle.elapsedPaused / glfwGetTime(),
+                    0.5f * triangle.elapsedPaused / glfwGetTime());
       } else {
         glUseProgram(program);
+        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
       }
-      // idk what a uniform matrix is, but moving this to after the useProgram
-      // calls was the key to multiple shaders working!
-      glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
       glBindVertexArray(vertex_arrays[i]);
       glDrawArrays(GL_TRIANGLES, 0, 3);
     }

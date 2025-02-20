@@ -44,7 +44,7 @@ static const char *rgb_fragment_shader_text = "#version 330 core\n"
                                           "    fragment = vec4(color, 1.0);\n"
                                           "}\n";
 
-static const char *rgb_fragment_shader_2_text = "#version 330 core\n"
+static const char *solid_color_fragment_shader_text = "#version 330 core\n"
                                           "in vec3 color;\n"
                                           "out vec4 fragment;\n"
                                           "void main()\n"
@@ -149,7 +149,7 @@ void doEverything() {
   GLuint vertex_shader, fragment_shader, fragment_shader_2;
   setupVertexShader(&vertex_shader, vertex_shader_text);
   setupFragmentShader(&fragment_shader, rgb_fragment_shader_text);
-  setupFragmentShader(&fragment_shader_2, rgb_fragment_shader_2_text);
+  setupFragmentShader(&fragment_shader_2, solid_color_fragment_shader_text);
   const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
   const GLuint *shaders_2[] = {&vertex_shader, &fragment_shader_2};
 
@@ -204,17 +204,18 @@ void doEverything() {
     rotationMatrix(m, v, mvp, triangle.delX, triangle.delY, triangle.delZ,
                    ratio, triangle.elapsedPaused);
 
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
-
     for (int i = 0; i < 3; i++) {
       // TODO: this doesn't work; I think there's something about these
       // shaders that's different than the tutorials. Even using separate vertex
       // shaders doesn't work.
-      if (i == 1) {
+      if (i == 0) {
         glUseProgram(program_2);
       } else {
         glUseProgram(program);
       }
+      // idk what a uniform matrix is, but moving this to after the useProgram
+      // calls was the key to multiple shaders working!
+      glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
       glBindVertexArray(vertex_arrays[i]);
       glDrawArrays(GL_TRIANGLES, 0, 3);
     }

@@ -11,6 +11,7 @@ public:
 
   std::vector<float> pauseEvents;
   float elapsedPaused;
+  float colorMultiplier;
 
   Triangle();
   Triangle(float currentTime);

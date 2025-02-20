@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+float COLOR_MULT_RATE = 0.05;
+
 Triangle::Triangle() {
   construct();
 }
@@ -18,6 +20,7 @@ void Triangle::construct() {
 
   pauseEvents.reserve(32*sizeof(float)); // TODO: totally arbitrary
   elapsedPaused = 0.0f;
+  colorMultiplier = 0.5f;
 }
 
 void Triangle::doUpdate(float currentTime, InputState *inputState) {
@@ -25,6 +28,16 @@ void Triangle::doUpdate(float currentTime, InputState *inputState) {
   if (inputState->spacePressedAt > pauseEvents.back()) {
     pauseEvents.push_back(currentTime);
     inputState->spacePressedAt = 0.0f; // TODO: ick, but works
+  }
+
+  if (pauseEvents.size() % 2 == 0) { // <=> unpaused
+    if (colorMultiplier > 0.0f) {
+      colorMultiplier -= COLOR_MULT_RATE;
+    }
+  } else {
+    if (colorMultiplier < 20.0f) {
+      colorMultiplier += COLOR_MULT_RATE;
+    }
   }
 
   // Advance pause timer
@@ -43,7 +56,6 @@ void Triangle::doUpdate(float currentTime, InputState *inputState) {
       elapsedPaused += currentTime - pauseEvents[i];
     }
   }
-
   // Handle translation input
   if (inputState->wHeld) {
     delY += 0.02f;

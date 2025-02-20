@@ -227,11 +227,8 @@ void doEverything() {
         glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
                            (const GLfloat *)&mvp);
 
-        // TODO: this is not really graphics logic
-        float pauseMultiplier =
-            triangle.elapsedPaused / (glfwGetTime() - triangle.elapsedPaused);
-        glUniform3f(uniColor_location, pauseMultiplier, pauseMultiplier,
-                    pauseMultiplier);
+        glUniform3f(uniColor_location, triangle.colorMultiplier,
+                    triangle.colorMultiplier, triangle.colorMultiplier);
       } else {
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);

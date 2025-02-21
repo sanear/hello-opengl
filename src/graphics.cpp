@@ -6,54 +6,14 @@
 
 #include "graphics.h"
 #include "logic.h"
+#include "shader.h"
 
 using namespace std;
 
 void error_callback(int error, const char *description);
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods);
-void logShaderError(GLuint shader);
-void logShaderProgramError(GLuint shaderProgram);
 void logUniformError(GLint uniform_location, string uniform_name, GLuint program);
-
-// Text of GLSL code for simple vertex and fragment shaders
-// Evidently, this will sometimes be the time when we convert
-// application x,y,z to "normalized device coordinates", which
-// are (understandably) scaled to [-1.0, 1.0] and (bafflingly)
-// centered at (0.5,0.5,0.5)
-// ... I am guessing that we do that transformation in the
-// shader in order to push as much vertex-level computation as
-// possible to the GPU
-static const char *vertex_shader_text =
-    "#version 330 core\n"
-    "uniform mat4 MVP;\n"
-    "in vec3 vCol;\n"
-    "in vec2 vPos;\n"
-    "out vec3 color;\n"
-    "void main()\n"
-    "{\n"
-    "    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-    "    color = vCol;\n"
-    "}\n";
-
-static const char *rgb_fragment_shader_text =
-    "#version 330 core\n"
-    "in vec3 color;\n"
-    "out vec4 fragment;\n"
-    "void main()\n"
-    "{\n"
-    "    fragment = vec4(color, 1.0);\n"
-    "}\n";
-
-static const char *uniform_fragment_shader_text =
-    "#version 330 core\n"
-    "uniform float uniColor;\n"
-    "in vec3 color;\n"
-    "out vec4 fragment;\n"
-    "void main()\n"
-    "{\n"
-    "    fragment = vec4(uniColor * color, 1.0);\n"
-    "}\n";
 
 // TODO: obviously this doesn't go here
 bool START_PAUSED = true;
@@ -79,37 +39,6 @@ static const Vertex triangles[3][3] = {{{{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
                                        {{{0.f, -sqrt_48}, {1.f, 0.f, 0.f}},
                                         {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
                                         {{0.8f, -sqrt_48}, {0.f, 0.f, 1.f}}}};
-
-void setupShader(GLuint *shader, const char *shaderText) {
-  glShaderSource(*shader, 1, &shaderText, NULL);
-  glCompileShader(*shader);
-  logShaderError(*shader);
-}
-
-void setupVertexShader(GLuint *shader, const char *text) {
-  *shader = glCreateShader(GL_VERTEX_SHADER);
-  setupShader(shader, text);
-}
-
-void setupFragmentShader(GLuint *shader, const char *text) {
-  *shader = glCreateShader(GL_FRAGMENT_SHADER);
-  setupShader(shader, text);
-}
-
-void setupShaderProgram(GLuint *shaderProgram, const GLuint *shaders[],
-                        int shaderCount) {
-  *shaderProgram = glCreateProgram();
-  for (int i = 0; i < shaderCount; i++) {
-    cout << "Attaching shader " << *shaders[i] << " to program "
-         << *shaderProgram << endl;
-    glAttachShader(*shaderProgram, *shaders[i]);
-  }
-  glLinkProgram(*shaderProgram);
-  logShaderProgramError(*shaderProgram);
-  for (int i = 0; i < shaderCount; i++) {
-    glDeleteShader(*shaders[i]);
-  }
-}
 
 GLFWwindow *initGlfwWindow() {
   // Set callback for errors and initialize glfw
@@ -159,17 +88,8 @@ void doEverything() {
   GLFWwindow *window = initGlfwWindow();
 
   cout << "Initializing shaders..." << endl;
-  GLuint vertex_shader, fragment_shader, uniform_fragment_shader;
-  setupVertexShader(&vertex_shader, vertex_shader_text);
-  setupFragmentShader(&fragment_shader, rgb_fragment_shader_text);
-  setupFragmentShader(&uniform_fragment_shader, uniform_fragment_shader_text);
-  const GLuint *shaders[] = {&vertex_shader, &fragment_shader};
-  const GLuint *shaders_2[] = {&vertex_shader, &uniform_fragment_shader};
-
-  cout << "Creating program..." << endl;
-  GLuint program, uniform_program;
-  setupShaderProgram(&program, shaders, 2);
-  setupShaderProgram(&uniform_program, shaders_2, 2);
+  Shader shader = Shader("./shaders/vertex.vs", "./shaders/rgb_fragment.fs");
+  Shader uniformShader = Shader("./shaders/vertex.vs", "./shaders/uniform_fragment.fs");
 
   // Setup buffer and array objects
   cout << "Setting up vertex array and buffer objects..." << endl;
@@ -181,9 +101,9 @@ void doEverything() {
 
   // Get attribute locations
   // vPos = vector of positions
-  const GLint vpos_location = glGetAttribLocation(program, "vPos");
+  const GLint vpos_location = glGetAttribLocation(shader.id, "vPos");
   // vCol = vector of colors
-  const GLint vcol_location = glGetAttribLocation(program, "vCol");
+  const GLint vcol_location = glGetAttribLocation(shader.id, "vCol");
 
   // Bind arrays &co for each of the three triangles
   for (int i = 0; i < 3; i++) {
@@ -202,14 +122,14 @@ void doEverything() {
 
   // Get uniform locations
   // For standard program
-  GLint mvp_location = glGetUniformLocation(program, "MVP");
-  logUniformError(mvp_location, "MVP", program);
+  GLint mvp_location = glGetUniformLocation(shader.id, "MVP");
+  logUniformError(mvp_location, "MVP", shader.id);
 
   // For uniform program
-  GLint uniform_mvp_location = glGetUniformLocation(uniform_program, "MVP");
-  logUniformError(uniform_mvp_location, "MVP", uniform_program);
-  GLint uniColor_location = glGetUniformLocation(uniform_program, "uniColor");
-  logUniformError(uniColor_location, "uniColor", uniform_program);
+  GLint uniform_mvp_location = glGetUniformLocation(uniformShader.id, "MVP");
+  logUniformError(uniform_mvp_location, "MVP", uniformShader.id);
+  GLint uniColor_location = glGetUniformLocation(uniformShader.id, "uniColor");
+  logUniformError(uniColor_location, "uniColor", uniformShader.id);
 
   // Main loop!
   // TODO: this should live separate from the graphics right?
@@ -231,13 +151,13 @@ void doEverything() {
 
     for (int i = 0; i < 3; i++) {
       if (i == 1) {
-        glUseProgram(uniform_program);
+        glUseProgram(uniformShader.id);
         glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
                            (const GLfloat *)&mvp);
 
         glUniform1f(uniColor_location, triangle.colorMultiplier);
       } else {
-        glUseProgram(program);
+        glUseProgram(shader.id);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);
       }
       glBindVertexArray(vertex_arrays[i]);
@@ -265,29 +185,6 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
   handleKeys(key, action, &inputState);
-}
-
-void logShaderError(GLuint shader) {
-  int success;
-  char infoLog[512];
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    cout << "ERROR::SHADER::" << shader << "::COMPILATION_FAILED\n"
-         << infoLog << endl;
-  }
-}
-
-void logShaderProgramError(GLuint shaderProgram) {
-  GLint success;
-  char infoLog[512];
-  glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-    cout << "ERROR::SHADER_PROGRAM::" << shaderProgram
-         << "::COMPILATION_FAILED\n"
-         << infoLog << endl;
-  }
 }
 
 void logUniformError(GLint uniform_location, string uniform_name, GLuint program) {

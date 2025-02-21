@@ -14,6 +14,7 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods);
 void logShaderError(GLuint shader);
 void logShaderProgramError(GLuint shaderProgram);
+void logUniformError(GLint uniform_location, string uniform_name, GLuint program);
 
 // Text of GLSL code for simple vertex and fragment shaders
 // Evidently, this will sometimes be the time when we convert
@@ -178,17 +179,13 @@ void doEverything() {
   GLuint vertex_arrays[3];
   glGenVertexArrays(3, vertex_arrays);
 
-  // Uniforms!
-  GLint uniform_mvp_location = glGetUniformLocation(uniform_program, "MVP");
-  GLint uniColor_location = glGetUniformLocation(uniform_program, "uniColor");
-  // mvp = model*view*projection, a matrix multiplication for camera/3d world
-  // stuff
-  GLint mvp_location = glGetUniformLocation(program, "MVP");
+  // Get attribute locations
   // vPos = vector of positions
   const GLint vpos_location = glGetAttribLocation(program, "vPos");
   // vCol = vector of colors
   const GLint vcol_location = glGetAttribLocation(program, "vCol");
 
+  // Bind arrays &co for each of the three triangles
   for (int i = 0; i < 3; i++) {
     cout << "Binding vao and vbo " << i << endl;
     glBindVertexArray(vertex_arrays[i]);
@@ -202,6 +199,17 @@ void doEverything() {
                           (void *)offsetof(Vertex, col));
     glEnableVertexAttribArray(vcol_location);
   }
+
+  // Get uniform locations
+  // For standard program
+  GLint mvp_location = glGetUniformLocation(program, "MVP");
+  logUniformError(mvp_location, "MVP", program);
+
+  // For uniform program
+  GLint uniform_mvp_location = glGetUniformLocation(uniform_program, "MVP");
+  logUniformError(uniform_mvp_location, "MVP", uniform_program);
+  GLint uniColor_location = glGetUniformLocation(uniform_program, "uniColor");
+  logUniformError(uniColor_location, "uniColor", uniform_program);
 
   // Main loop!
   // TODO: this should live separate from the graphics right?
@@ -279,5 +287,11 @@ void logShaderProgramError(GLuint shaderProgram) {
     cout << "ERROR::SHADER_PROGRAM::" << shaderProgram
          << "::COMPILATION_FAILED\n"
          << infoLog << endl;
+  }
+}
+
+void logUniformError(GLint uniform_location, string uniform_name, GLuint program) {
+  if (uniform_location < 0) {
+      cout << "ERROR::UNIFORM::Failed to find location of uniform " << uniform_name << " in program " << program << endl;
   }
 }

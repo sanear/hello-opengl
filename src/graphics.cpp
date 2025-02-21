@@ -89,7 +89,7 @@ void doEverything() {
 
   cout << "Initializing shaders..." << endl;
   Shader shader = Shader("./shaders/vertex.vs", "./shaders/rgb_fragment.fs");
-  Shader uniformShader = Shader("./shaders/vertex.vs", "./shaders/uniform_fragment.fs");
+  Shader glowShader = Shader("./shaders/vertex.vs", "./shaders/glow_fragment.fs");
 
   // Setup buffer and array objects
   cout << "Setting up vertex array and buffer objects..." << endl;
@@ -126,8 +126,8 @@ void doEverything() {
   logUniformError(mvp_location, "MVP", shader.id);
 
   // For uniform program
-  GLint uniform_mvp_location = glGetUniformLocation(uniformShader.id, "MVP");
-  logUniformError(uniform_mvp_location, "MVP", uniformShader.id);
+  GLint uniform_mvp_location = glGetUniformLocation(glowShader.id, "MVP");
+  logUniformError(uniform_mvp_location, "MVP", glowShader.id);
 
   // Main loop!
   // TODO: this should live separate from the graphics right?
@@ -149,12 +149,11 @@ void doEverything() {
 
     for (int i = 0; i < 3; i++) {
       if (i == 1) {
-        glUseProgram(uniformShader.id);
+        glUseProgram(glowShader.id);
         glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
                            (const GLfloat *)&mvp);
 
-        uniformShader.setFloat("offset", 1.5);
-        uniformShader.setFloat("uniColor", triangle.colorMultiplier);
+        glowShader.setFloat("glowFactor", triangle.colorMultiplier);
       } else {
         glUseProgram(shader.id);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);

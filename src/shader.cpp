@@ -73,7 +73,7 @@ GLint compileShader(const char *shaderCode, GLenum shader_type) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    cout << "ERROR::SHADER::" << shader_type << "COMPILATION_FAILED\n"
+    cout << "ERROR::SHADER::" << shader_type << "::COMPILATION_FAILED\n"
          << infoLog << endl;
   }
   return shader;

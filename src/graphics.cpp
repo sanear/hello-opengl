@@ -120,7 +120,7 @@ void doEverything() {
     glEnableVertexAttribArray(vcol_location);
   }
 
-  // Get uniform locations
+  // Get uniform mvp locations
   // For standard program
   GLint mvp_location = glGetUniformLocation(shader.id, "MVP");
   logUniformError(mvp_location, "MVP", shader.id);
@@ -128,8 +128,6 @@ void doEverything() {
   // For uniform program
   GLint uniform_mvp_location = glGetUniformLocation(uniformShader.id, "MVP");
   logUniformError(uniform_mvp_location, "MVP", uniformShader.id);
-  GLint uniColor_location = glGetUniformLocation(uniformShader.id, "uniColor");
-  logUniformError(uniColor_location, "uniColor", uniformShader.id);
 
   // Main loop!
   // TODO: this should live separate from the graphics right?
@@ -155,7 +153,8 @@ void doEverything() {
         glUniformMatrix4fv(uniform_mvp_location, 1, GL_FALSE,
                            (const GLfloat *)&mvp);
 
-        glUniform1f(uniColor_location, triangle.colorMultiplier);
+        uniformShader.setFloat("offset", 1.5);
+        uniformShader.setFloat("uniColor", triangle.colorMultiplier);
       } else {
         glUseProgram(shader.id);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat *)&mvp);

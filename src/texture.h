@@ -1,18 +1,16 @@
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef TEXTURE_H
+#define TEXTURE_H
 
 #include <string>
 
-using namespace std;
-
 class Texture {
 public:
-    unsigned char *data = stbi_load(texturePath, &width, &height, &nrChannels, 0)
+    unsigned char *data;
+    int width, height, nrChannels;
 
     GLuint texture;
 
-    Texture(const char *texturePath, int width, int height, int nrChannels);
-
-}
+    Texture(const char *texturePath);
+};
 
 #endif

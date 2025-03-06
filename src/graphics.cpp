@@ -7,13 +7,15 @@
 #include "graphics.h"
 #include "logic.h"
 #include "shader.h"
+#include "texture.h"
 
 using namespace std;
 
 void error_callback(int error, const char *description);
 static void key_callback(GLFWwindow *window, int key, int scancode, int action,
                          int mods);
-void logUniformError(GLint uniform_location, string uniform_name, GLuint program);
+void logUniformError(GLint uniform_location, string uniform_name,
+                     GLuint program);
 
 // TODO: obviously this doesn't go here
 bool START_PAUSED = true;
@@ -30,15 +32,11 @@ static Triangle triangle = initTriangle(START_PAUSED);
 
 const float sqrt_48 = 0.69282032f;
 
-static const Vertex triangles[3][3] = {{{{-0.4f, 0.f}, {1.f, 0.f, 0.f}},
-                                        {{0.f, sqrt_48}, {0.f, 1.f, 0.f}},
-                                        {{0.4f, 0.f}, {0.f, 0.f, 1.f}}},
-                                       {{{-0.8f, -sqrt_48}, {1.f, 0.f, 0.f}},
-                                        {{-0.4f, 0.f}, {0.f, 1.f, 0.f}},
-                                        {{0.f, -sqrt_48}, {0.f, 0.f, 1.f}}},
-                                       {{{0.f, -sqrt_48}, {1.f, 0.f, 0.f}},
-                                        {{0.4f, 0.f}, {0.f, 1.f, 0.f}},
-                                        {{0.8f, -sqrt_48}, {0.f, 0.f, 1.f}}}};
+static const Vertex vertices[4][3][2] = {
+    {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}}};
 
 GLFWwindow *initGlfwWindow() {
   // Set callback for errors and initialize glfw
@@ -89,7 +87,11 @@ void doEverything() {
 
   cout << "Initializing shaders..." << endl;
   Shader shader = Shader("./shaders/vertex.vs", "./shaders/rgb_fragment.fs");
-  Shader glowShader = Shader("./shaders/vertex.vs", "./shaders/glow_fragment.fs");
+  Shader glowShader =
+      Shader("./shaders/vertex.vs", "./shaders/glow_fragment.fs");
+
+  cout << "Initializing textures..." << endl;
+  Texture texture = Texture("./resources/container.jpg");
 
   // Setup buffer and array objects
   cout << "Setting up vertex array and buffer objects..." << endl;
@@ -100,17 +102,20 @@ void doEverything() {
   glGenVertexArrays(3, vertex_arrays);
 
   // Get attribute locations
-  // vPos = vector of positions
+  // vPos = position vector
   const GLint vpos_location = glGetAttribLocation(shader.id, "vPos");
-  // vCol = vector of colors
+  // vCol = color vector
   const GLint vcol_location = glGetAttribLocation(shader.id, "vCol");
+  // vTex = texture vector
+  const GLint vtex_location = glGetAttribLocation(shader.id, "vTex");
 
   // Bind arrays &co for each of the three triangles
   for (int i = 0; i < 3; i++) {
     cout << "Binding vao and vbo " << i << endl;
+    glBindTexture(vertex_arrays[i], texture.texture);
     glBindVertexArray(vertex_arrays[i]);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[i]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles[i]), triangles[i],
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[i]), vertices[i],
                  GL_STATIC_DRAW);
     glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *)offsetof(Vertex, pos));
@@ -118,6 +123,9 @@ void doEverything() {
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           (void *)offsetof(Vertex, col));
     glEnableVertexAttribArray(vcol_location);
+    glVertexAttribPointer(vtex_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          (void *)offsetof(Vertex, col));
+    glEnableVertexAttribArray(vtex_location);
   }
 
   // Get uniform mvp locations
@@ -185,8 +193,10 @@ static void key_callback(GLFWwindow *window, int key, int scancode, int action,
   handleKeys(key, action, &inputState);
 }
 
-void logUniformError(GLint uniform_location, string uniform_name, GLuint program) {
+void logUniformError(GLint uniform_location, string uniform_name,
+                     GLuint program) {
   if (uniform_location < 0) {
-      cout << "ERROR::UNIFORM::Failed to find location of uniform " << uniform_name << " in program " << program << endl;
+    cout << "ERROR::UNIFORM::Failed to find location of uniform "
+         << uniform_name << " in program " << program << endl;
   }
 }
